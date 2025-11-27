@@ -2,18 +2,17 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Role, User } from '../types';
-import { dataService } from '../services/dataService';
 
 export const Login = () => {
-  const { login, verifyMfa, loginStep, register } = useAuth();
+  const { login, verifyMfa, loginStep, register, loading } = useAuth();
   const { t } = useLanguage();
   const [isRegistering, setIsRegistering] = useState(false);
 
   // Form State
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Register State
   const [name, setName] = useState('');
@@ -23,34 +22,41 @@ export const Login = () => {
   const [parentEmail, setParentEmail] = useState('');
   const [role, setRole] = useState<Role>(Role.STUDENT);
 
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
     try {
       if (loginStep === 'CREDENTIALS') {
-        await login(email, password);
+        await login(email); // No password, just email for OTP
       } else {
         await verifyMfa(otp);
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "An error occurred");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
     
     if (age < 16 && (!parentName || !parentEmail)) {
       setError("Parent details required for minors.");
+      setIsSubmitting(false);
       return;
     }
 
+    // ID is assigned by Supabase Auth on verification
     const newUser: User = {
-      id: dataService.generateId(), // Safe ID generation
+      id: '', 
       name,
       email,
-      password,
       phone,
       age,
       role,
@@ -63,17 +69,19 @@ export const Login = () => {
       await register(newUser);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
-  if (loginStep === 'MFA' && !isRegistering) {
+  if (loginStep === 'MFA') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
         <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
             <h2 className="text-2xl font-bold text-gray-800">{t('verify')}</h2>
-            <p className="text-sm text-gray-500 mt-2">Enter the code sent to your email.</p>
+            <p className="text-sm text-gray-500 mt-2">Check your email ({email}) for the code.</p>
           </div>
           
           {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-center text-sm font-medium">{error}</div>}
@@ -85,13 +93,13 @@ export const Login = () => {
                 value={otp} 
                 onChange={(e) => setOtp(e.target.value)} 
                 className="w-full text-center text-2xl tracking-widest border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all"
-                placeholder="• • • •"
-                maxLength={4}
+                placeholder="• • • • • •"
+                maxLength={6}
                 required
               />
             </div>
-            <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-              {t('verify')}
+            <button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50">
+              {isSubmitting ? t('loading') : t('verify')}
             </button>
           </form>
         </div>
@@ -109,7 +117,6 @@ export const Login = () => {
         <h2 className="text-3xl font-black mb-2 text-center text-gray-800 tracking-tight">
           {isRegistering ? t('register') : t('login')}
         </h2>
-        <p className="text-center text-gray-400 mb-8 text-sm">Welcome to Doposcuola Connect</p>
         
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm border-l-4 border-red-500">{error}</div>}
 
@@ -136,10 +143,7 @@ export const Login = () => {
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('password')}</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
-          </div>
+          {/* No Password field for OTP flow */}
 
           {isRegistering && (
             <>
@@ -166,38 +170,23 @@ export const Login = () => {
             </>
           )}
 
-          <button type="submit" className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-black transition shadow-lg mt-4">
-            {isRegistering ? t('registerButton') : t('loginButton')}
+          <button type="submit" disabled={isSubmitting} className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-black transition shadow-lg mt-4 disabled:opacity-50">
+            {isSubmitting ? t('loading') : (isRegistering ? t('registerButton') : "Send OTP Code")}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <button 
-            onClick={() => setIsRegistering(!isRegistering)}
+            onClick={() => {
+                setIsRegistering(!isRegistering);
+                setError('');
+                setEmail('');
+            }}
             className="text-sm text-indigo-600 font-semibold hover:underline"
           >
             {isRegistering ? t('login') : t('register')}
           </button>
         </div>
-        
-        {/* Help Tip for Prototype */}
-        {!isRegistering && (
-            <div className="mt-8 border-t border-gray-100 pt-4 text-xs text-gray-400">
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="bg-gray-50 p-2 rounded">
-                        <div className="font-bold">Admin/Teacher</div>
-                        <div>lvercell@gmail.com</div>
-                        <div>060696Satanas</div>
-                    </div>
-                    <div className="bg-gray-50 p-2 rounded">
-                        <div className="font-bold">Student</div>
-                        <div>student@doposcuola.com</div>
-                        <div>1234</div>
-                    </div>
-                </div>
-                <div className="text-center mt-2 font-mono bg-gray-100 rounded py-1">OTP: 1234</div>
-            </div>
-        )}
       </div>
     </div>
   );

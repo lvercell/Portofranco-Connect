@@ -20,9 +20,23 @@ export const AdminDashboard = () => {
   const [reportDate, setReportDate] = useState<string>('');
   const [customBg, setCustomBg] = useState('');
 
-  const refresh = () => {
-    setTeachers(dataService.getUsers().filter(u => u.role === Role.TEACHER));
-    setBookings(dataService.getBookings());
+  const refresh = async () => {
+    const allUsers = await dataService.getAllUsers();
+    setTeachers(allUsers.filter(u => u.role === Role.TEACHER));
+    
+    const allBookings = await dataService.getBookings();
+     // Normalize Supabase data
+    const normalizedBookings = allBookings.map((b: any) => ({
+        ...b,
+        studentId: b.student_id || b.studentId,
+        studentName: b.student_name || b.studentName,
+        subjectId: b.subject_id || b.subjectId,
+        teacherId: b.teacher_id || b.teacherId,
+        teacherName: b.teacher_name || b.teacherName
+    }));
+
+    setBookings(normalizedBookings);
+
     const available = dataService.getAvailableDates();
     if (available.length > 0 && !reportDate) setReportDate(available[0]);
   };
@@ -31,8 +45,8 @@ export const AdminDashboard = () => {
     refresh();
   }, []);
 
-  const toggleLeader = (userId: string) => {
-    dataService.toggleLeaderStatus(userId);
+  const toggleLeader = async (userId: string, currentStatus: boolean = false) => {
+    await dataService.toggleLeaderStatus(userId, currentStatus);
     refresh();
   };
 
@@ -133,7 +147,7 @@ export const AdminDashboard = () => {
                         </span>
                     ) : (
                         <button 
-                        onClick={() => toggleLeader(teacher.id)}
+                        onClick={() => toggleLeader(teacher.id, teacher.isLeader)}
                         className={`${teacher.isLeader ? 'text-red-600 hover:text-red-900' : 'text-indigo-600 hover:text-indigo-900'}`}
                         >
                         {teacher.isLeader ? t('demoteLeader') : t('promoteToLeader')}

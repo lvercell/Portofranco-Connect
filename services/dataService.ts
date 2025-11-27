@@ -1,207 +1,174 @@
+import { User, Booking, Announcement } from '../types';
+import { supabase } from './supabaseClient';
 
-import { User, Booking, Announcement, Role } from '../types';
-
-// Robust ID Generator
-const generateId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+// Helper to check if Supabase is connected
+const isSupabaseConfigured = () => {
+    return !!supabase;
 };
-
-// Feature detection for LocalStorage
-const isLocalStorageAvailable = () => {
-    try {
-        const test = '__storage_test__';
-        localStorage.setItem(test, test);
-        localStorage.removeItem(test);
-        return true;
-    } catch (e) {
-        return false;
-    }
-};
-
-const useMemory = !isLocalStorageAvailable();
-const memoryStore = new Map<string, string>();
-
-const safeStorage = {
-  getItem: (key: string): string | null => {
-    if (useMemory) return memoryStore.get(key) || null;
-    return localStorage.getItem(key);
-  },
-  setItem: (key: string, value: string) => {
-    if (useMemory) {
-        memoryStore.set(key, value);
-    } else {
-        localStorage.setItem(key, value);
-    }
-  }
-};
-
-// Mock Data Initialization
-const initData = () => {
-  let users: User[] = JSON.parse(safeStorage.getItem('users') || '[]');
-
-  // 1. Ensure Admin exists
-  const adminEmail = 'lvercell@gmail.com';
-  const adminUser: User = {
-    id: 'admin-seed-id',
-    name: 'Sistema Admin',
-    email: adminEmail,
-    password: '060696Satanas', 
-    phone: '+39 000 000 0000',
-    role: Role.TEACHER, 
-    age: 40,
-    isAdmin: true,
-    isLeader: true,
-    subjects: []
-  };
-
-  const existingAdminIndex = users.findIndex(u => u.email.toLowerCase() === adminEmail.toLowerCase());
-  if (existingAdminIndex !== -1) {
-    users[existingAdminIndex] = { ...users[existingAdminIndex], ...adminUser };
-  } else {
-    users.push(adminUser);
-    console.log(`System Admin initialized: ${adminEmail}`);
-  }
-
-  // 2. Ensure Seed Student exists
-  const studentEmail = 'student@doposcuola.com';
-  const existingStudent = users.find(u => u.email.toLowerCase() === studentEmail);
-  if (!existingStudent) {
-    const studentUser: User = {
-        id: 'student-seed-id',
-        name: 'Mario Rossi',
-        email: studentEmail,
-        password: '1234',
-        phone: '123456789',
-        role: Role.STUDENT,
-        age: 15,
-        parentName: 'Luigi Rossi',
-        parentEmail: 'papa@rossi.com',
-        subjects: []
-    };
-    users.push(studentUser);
-    console.log(`Seed Student initialized: ${studentEmail}`);
-  }
-
-  // Persist users back
-  safeStorage.setItem('users', JSON.stringify(users));
-
-  if (!safeStorage.getItem('bookings')) safeStorage.setItem('bookings', '[]');
-  if (!safeStorage.getItem('announcements')) safeStorage.setItem('announcements', '[]');
-};
-
-initData();
 
 export const dataService = {
-  generateId, 
-
-  // User Methods
-  getUsers: (): User[] => JSON.parse(safeStorage.getItem('users') || '[]'),
   
-  createUser: (user: User) => {
-    const users = dataService.getUsers();
+  // --- USERS ---
+
+  createUser: async (user: User): Promise<User | null> => {
+    if (!isSupabaseConfigured()) throw new Error("Supabase not connected");
     
-    if (user.email.toLowerCase() === 'lvercell@gmail.com') {
-        user.isAdmin = true;
-        user.isLeader = true; 
-    }
+    // We insert into the 'public.users' table. 
+    // The 'id' MUST match the auth.uid() from the registered user in AuthContext.
+    const { data, error } = await supabase!
+      .from('users')
+      .insert([user])
+      .select()
+      .single();
 
-    if (!user.id) user.id = generateId();
-
-    users.push(user);
-    safeStorage.setItem('users', JSON.stringify(users));
-    return user;
+    if (error) throw error;
+    return data;
   },
 
-  getUserByEmail: (email: string): User | undefined => {
-    const users = dataService.getUsers();
-    return users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  getUserById: async (id: string): Promise<User | null> => {
+    if (!isSupabaseConfigured()) return null;
+    const { data, error } = await supabase!
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (error) return null;
+    return data;
   },
 
-  toggleLeaderStatus: (userId: string) => {
-    const users = dataService.getUsers();
-    const index = users.findIndex(u => u.id === userId);
-    if (index !== -1) {
-        users[index].isLeader = !users[index].isLeader;
-        safeStorage.setItem('users', JSON.stringify(users));
-    }
+  getUserByEmail: async (email: string): Promise<User | null> => {
+     if (!isSupabaseConfigured()) return null;
+     const { data, error } = await supabase!
+      .from('users')
+      .select('*')
+      .ilike('email', email)
+      .single();
+
+    if (error) return null;
+    return data;
   },
 
-  // Booking Methods
-  getBookings: (): Booking[] => JSON.parse(safeStorage.getItem('bookings') || '[]'),
+  getAllUsers: async (): Promise<User[]> => {
+    if (!isSupabaseConfigured()) return [];
+    const { data } = await supabase!.from('users').select('*');
+    return data || [];
+  },
 
-  createBooking: (student: User, subjectId: string, date: string) => {
-    const bookings = dataService.getBookings();
+  toggleLeaderStatus: async (userId: string, currentStatus: boolean) => {
+    if (!isSupabaseConfigured()) return;
+    await supabase!.from('users').update({ is_leader: !currentStatus }).eq('id', userId);
+  },
+
+  // --- BOOKINGS ---
+
+  getBookings: async (): Promise<Booking[]> => {
+    if (!isSupabaseConfigured()) return [];
+    const { data, error } = await supabase!
+        .from('bookings')
+        .select('*');
+    if (error) console.error(error);
+    return data || [];
+  },
+
+  createBooking: async (student: User, subjectId: string, date: string) => {
+    if (!isSupabaseConfigured()) return;
+
+    // 1. Check constraints
+    const { data: studentBookings } = await supabase!
+        .from('bookings')
+        .select('*')
+        .eq('student_id', student.id)
+        .eq('date', date);
     
-    const studentDailyBookings = bookings.filter(b => b.studentId === student.id && b.date === date);
-    if (studentDailyBookings.length >= 2) {
-      throw new Error("MAX_SUBJECTS");
-    }
-    
-    if (studentDailyBookings.find(b => b.subjectId === subjectId)) {
-      throw new Error("DUPLICATE_SUBJECT");
+    if (studentBookings && studentBookings.length >= 2) {
+        throw new Error("MAX_SUBJECTS");
     }
 
-    const newBooking: Booking = {
-      id: generateId(),
-      studentId: student.id,
-      studentName: student.name,
-      subjectId,
-      date,
+    if (studentBookings?.find(b => b.subjectId === subjectId)) {
+        throw new Error("DUPLICATE_SUBJECT");
+    }
+
+    const newBooking = {
+      student_id: student.id,
+      student_name: student.name,
+      subject_id: subjectId, // maps to subjectId col in DB
+      date: date
     };
+
+    // Note: ensure DB columns are snake_case: student_id, etc.
+    // I am mapping the object keys to snake_case for Supabase if needed, 
+    // but usually it's easier to keep TS types matching DB or map them.
+    // For this prototype, I will assume the DB columns created in SQL match the keys here 
+    // OR I will map them explicitly.
+    const { error } = await supabase!.from('bookings').insert([{
+        student_id: student.id,
+        student_name: student.name,
+        subject_id: subjectId,
+        date: date
+    }]);
+
+    if (error) throw error;
+  },
+
+  cancelBooking: async (bookingId: string) => {
+    if (!isSupabaseConfigured()) return;
+    await supabase!.from('bookings').delete().eq('id', bookingId);
+  },
+
+  claimBooking: async (bookingId: string, teacher: User) => {
+    if (!isSupabaseConfigured()) return;
     
-    bookings.push(newBooking);
-    safeStorage.setItem('bookings', JSON.stringify(bookings));
+    // Check if already claimed
+    const { data: booking } = await supabase!
+        .from('bookings')
+        .select('teacher_id')
+        .eq('id', bookingId)
+        .single();
+        
+    if (booking?.teacher_id) throw new Error("Already claimed");
+
+    await supabase!.from('bookings').update({
+        teacher_id: teacher.id,
+        teacher_name: teacher.name
+    }).eq('id', bookingId);
   },
 
-  cancelBooking: (bookingId: string) => {
-    let bookings = dataService.getBookings();
-    bookings = bookings.filter(b => b.id !== bookingId);
-    safeStorage.setItem('bookings', JSON.stringify(bookings));
+  unclaimBooking: async (bookingId: string) => {
+    if (!isSupabaseConfigured()) return;
+    await supabase!.from('bookings').update({
+        teacher_id: null,
+        teacher_name: null
+    }).eq('id', bookingId);
   },
 
-  claimBooking: (bookingId: string, teacher: User) => {
-    const bookings = dataService.getBookings();
-    const index = bookings.findIndex(b => b.id === bookingId);
-    
-    if (index === -1) throw new Error("Booking not found");
-    if (bookings[index].teacherId) throw new Error("Already claimed");
-
-    const teacherDailyBookings = bookings.filter(b => b.teacherId === teacher.id && b.date === bookings[index].date);
-    
-    bookings[index].teacherId = teacher.id;
-    bookings[index].teacherName = teacher.name;
-    
-    safeStorage.setItem('bookings', JSON.stringify(bookings));
+  updateBookingNotes: async (bookingId: string, notes: string) => {
+    if (!isSupabaseConfigured()) return;
+    await supabase!.from('bookings').update({ notes }).eq('id', bookingId);
   },
 
-  unclaimBooking: (bookingId: string) => {
-    const bookings = dataService.getBookings();
-    const index = bookings.findIndex(b => b.id === bookingId);
-    if (index !== -1) {
-        delete bookings[index].teacherId;
-        delete bookings[index].teacherName;
-        safeStorage.setItem('bookings', JSON.stringify(bookings));
-    }
+  // --- ANNOUNCEMENTS ---
+
+  getAnnouncements: async (): Promise<Announcement[]> => {
+    if (!isSupabaseConfigured()) return [];
+    const { data } = await supabase!
+        .from('announcements')
+        .select('*')
+        .order('created_at', { ascending: false });
+    return data || [];
   },
 
-  updateBookingNotes: (bookingId: string, notes: string) => {
-    const bookings = dataService.getBookings();
-    const index = bookings.findIndex(b => b.id === bookingId);
-    if (index !== -1) {
-      bookings[index].notes = notes;
-      safeStorage.setItem('bookings', JSON.stringify(bookings));
-    }
+  createAnnouncement: async (announcement: Announcement) => {
+    if (!isSupabaseConfigured()) return;
+    await supabase!.from('announcements').insert([{
+        title: announcement.title,
+        content: announcement.content,
+        author_name: announcement.authorName,
+        date: announcement.date
+    }]);
   },
 
-  // Announcement Methods
-  getAnnouncements: (): Announcement[] => JSON.parse(safeStorage.getItem('announcements') || '[]'),
-
-  createAnnouncement: (announcement: Announcement) => {
-    const list = dataService.getAnnouncements();
-    if (!announcement.id) announcement.id = generateId();
-    list.unshift(announcement); 
-    safeStorage.setItem('announcements', JSON.stringify(list));
-  },
+  // --- UTILS ---
 
   getAvailableDates: (): string[] => {
     const dates: string[] = [];
@@ -210,7 +177,7 @@ export const dataService = {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const day = d.getDay();
-      if (day === 2 || day === 4) {
+      if (day === 2 || day === 4) { // Tuesday (2) & Thursday (4)
         dates.push(d.toISOString().split('T')[0]);
       }
     }

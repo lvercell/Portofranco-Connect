@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -14,37 +13,48 @@ export const TeacherDashboard = () => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteContent, setNoteContent] = useState('');
 
-  const refresh = () => {
+  const refresh = async () => {
     const dates = dataService.getAvailableDates();
     if (!activeDate && dates.length > 0) setActiveDate(dates[0]);
-    setAllBookings(dataService.getBookings());
+    const data = await dataService.getBookings();
+    
+    // Normalize Supabase data for local use if snake_case is returned
+    const normalized = data.map((b: any) => ({
+        ...b,
+        studentId: b.student_id || b.studentId,
+        studentName: b.student_name || b.studentName,
+        subjectId: b.subject_id || b.subjectId,
+        teacherId: b.teacher_id || b.teacherId,
+        teacherName: b.teacher_name || b.teacherName
+    }));
+    setAllBookings(normalized);
   };
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [activeDate]);
 
-  const handleClaim = (bookingId: string) => {
+  const handleClaim = async (bookingId: string) => {
     if (!user) return;
     try {
-      dataService.claimBooking(bookingId, user);
+      await dataService.claimBooking(bookingId, user);
       refresh();
     } catch (e) {
       alert("Error claiming class");
     }
   };
 
-  const handleUnclaim = (bookingId: string) => {
+  const handleUnclaim = async (bookingId: string) => {
     try {
-        dataService.unclaimBooking(bookingId);
+        await dataService.unclaimBooking(bookingId);
         refresh();
     } catch (e) {
         console.error("Error unclaiming", e);
     }
   };
 
-  const saveNote = (bookingId: string) => {
-    dataService.updateBookingNotes(bookingId, noteContent);
+  const saveNote = async (bookingId: string) => {
+    await dataService.updateBookingNotes(bookingId, noteContent);
     setEditingNoteId(null);
     setNoteContent('');
     refresh();

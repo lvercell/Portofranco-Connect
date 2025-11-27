@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -8,13 +8,19 @@ import { StudentDashboard } from './views/StudentDashboard';
 import { TeacherDashboard } from './views/TeacherDashboard';
 import { LeaderDashboard } from './views/LeaderDashboard';
 import { AdminDashboard } from './views/AdminDashboard';
-import { Role } from './types';
+import { Role, Announcement } from './types';
 import { dataService } from './services/dataService'; // Import to init data
 
 const MainContent = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const announcements = dataService.getAnnouncements();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      dataService.getAnnouncements().then(setAnnouncements).catch(console.error);
+    }
+  }, [user]);
 
   if (!user) {
     return <Login />;
