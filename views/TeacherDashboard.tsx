@@ -1,0 +1,199 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { dataService } from '../services/dataService';
+import { Booking } from '../types';
+import { SUBJECTS_DATA } from '../constants';
+
+export const TeacherDashboard = () => {
+  const { user } = useAuth();
+  const { t, language } = useLanguage();
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [activeDate, setActiveDate] = useState<string>('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteContent, setNoteContent] = useState('');
+
+  const refresh = () => {
+    const dates = dataService.getAvailableDates();
+    if (!activeDate && dates.length > 0) setActiveDate(dates[0]);
+    setAllBookings(dataService.getBookings());
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const handleClaim = (bookingId: string) => {
+    if (!user) return;
+    try {
+      dataService.claimBooking(bookingId, user);
+      refresh();
+    } catch (e) {
+      alert("Error claiming class");
+    }
+  };
+
+  const saveNote = (bookingId: string) => {
+    dataService.updateBookingNotes(bookingId, noteContent);
+    setEditingNoteId(null);
+    setNoteContent('');
+    refresh();
+  };
+
+  const getSubjectDetails = (id: string) => {
+    return SUBJECTS_DATA.find(s => s.id === id) || { translations: { [language]: id }, color: 'bg-gray-100', icon: '❓' };
+  };
+
+  // Filter logic
+  const unclaimed = allBookings.filter(b => b.date === activeDate && !b.teacherId);
+  const myClasses = allBookings.filter(b => b.date === activeDate && b.teacherId === user?.id);
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Date Navigation */}
+      <div className="flex justify-center mb-8">
+        <div className="bg-white p-2 rounded-full shadow-sm border inline-flex gap-2">
+            {dataService.getAvailableDates().map(date => (
+            <button
+                key={date}
+                onClick={() => setActiveDate(date)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                activeDate === date 
+                    ? 'bg-indigo-600 text-white shadow-md' 
+                    : 'bg-transparent text-gray-500 hover:bg-gray-100'
+                }`}
+            >
+                {new Date(date).toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' })}
+            </button>
+            ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Available Pool */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
+          <div className="bg-gray-50 p-4 border-b border-gray-100">
+             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                {t('availableClasses')}
+             </h2>
+          </div>
+          
+          <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto flex-1">
+            {unclaimed.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                    <p>{t('noClasses')}</p>
+                </div>
+            )}
+            {unclaimed.map(b => {
+               const sub = getSubjectDetails(b.subjectId);
+               return (
+                <div key={b.id} className="group border border-gray-200 p-4 rounded-xl flex flex-col sm:flex-row sm:justify-between sm:items-center hover:shadow-md transition-all hover:border-green-300 gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl bg-gray-50 shadow-inner`}>
+                            {sub.icon}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900 text-lg">{sub.translations[language]}</h3>
+                            <div className="text-sm text-gray-500 flex items-center gap-1">
+                                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs uppercase font-bold tracking-wide">Student</span>
+                                {b.studentName}
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => handleClaim(b.id)}
+                        className="w-full sm:w-auto bg-white text-green-700 border border-green-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                    >
+                        {t('claim')}
+                    </button>
+                </div>
+               );
+            })}
+          </div>
+        </div>
+
+        {/* My Schedule */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
+            <div className="bg-indigo-50 p-4 border-b border-indigo-100">
+             <h2 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
+                <span className="text-xl">👩‍🏫</span>
+                {t('myClasses')}
+             </h2>
+            </div>
+            
+          <div className="p-4 space-y-4 flex-1">
+            {myClasses.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                    <p>{t('noClasses')}</p>
+                </div>
+            )}
+            {myClasses.map(b => {
+              const sub = getSubjectDetails(b.subjectId);
+              return (
+              <div key={b.id} className="relative bg-white border-l-4 border-indigo-500 shadow-sm p-5 rounded-r-xl">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                     <span className="text-2xl">{sub.icon}</span>
+                     <div>
+                        <span className="font-bold text-gray-800 block text-lg">{sub.translations[language]}</span>
+                        <span className="text-sm text-gray-500">{b.studentName}</span>
+                     </div>
+                  </div>
+                  <div className="text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">14:30 - 16:30</div>
+                </div>
+                
+                {/* Notes Section */}
+                <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-100">
+                  {editingNoteId === b.id ? (
+                    <div>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm mb-2 focus:ring-2 focus:ring-yellow-400 outline-none"
+                        value={noteContent}
+                        onChange={(e) => setNoteContent(e.target.value)}
+                        placeholder="Write student progress notes here..."
+                        rows={3}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button 
+                           onClick={() => setEditingNoteId(null)}
+                           className="text-xs text-gray-500 hover:text-gray-700"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => saveNote(b.id)}
+                          className="text-xs bg-yellow-500 text-white px-3 py-1 rounded font-medium hover:bg-yellow-600"
+                        >
+                          {t('saveNotes')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                        className="cursor-pointer group"
+                        onClick={() => {
+                            setEditingNoteId(b.id);
+                            setNoteContent(b.notes || '');
+                        }}
+                    >
+                       <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-bold text-yellow-700 uppercase tracking-wide">{t('notes')}</span>
+                            <span className="text-xs text-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity">Edit ✏️</span>
+                       </div>
+                       <p className={`text-sm ${b.notes ? 'text-gray-700' : 'text-gray-400 italic'}`}>
+                           {b.notes || "Click to add notes regarding this session..."}
+                       </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )})}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
