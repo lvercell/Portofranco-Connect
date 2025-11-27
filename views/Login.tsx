@@ -35,7 +35,12 @@ export const Login = () => {
         await verifyMfa(otp);
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred");
+      console.error(err);
+      if (err.message && err.message.includes("Error sending magic link")) {
+         setError("Error sending email. You may have reached the hourly limit (3 emails/hr on Free Tier) or SMTP is misconfigured.");
+      } else {
+         setError(err.message || "An error occurred");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -68,7 +73,12 @@ export const Login = () => {
     try {
       await register(newUser);
     } catch (err: any) {
-      setError(err.message);
+      console.error(err);
+      if (err.message && err.message.includes("Error sending magic link")) {
+         setError("Error sending email. You may have reached the hourly limit (3 emails/hr on Free Tier) or SMTP is misconfigured.");
+      } else {
+         setError(err.message || "Registration failed.");
+      }
     } finally {
         setIsSubmitting(false);
     }
