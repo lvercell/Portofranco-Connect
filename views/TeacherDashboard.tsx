@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -30,6 +31,15 @@ export const TeacherDashboard = () => {
       refresh();
     } catch (e) {
       alert("Error claiming class");
+    }
+  };
+
+  const handleUnclaim = (bookingId: string) => {
+    try {
+        dataService.unclaimBooking(bookingId);
+        refresh();
+    } catch (e) {
+        console.error("Error unclaiming", e);
     }
   };
 
@@ -133,7 +143,7 @@ export const TeacherDashboard = () => {
             {myClasses.map(b => {
               const sub = getSubjectDetails(b.subjectId);
               return (
-              <div key={b.id} className="relative bg-white border-l-4 border-indigo-500 shadow-sm p-5 rounded-r-xl">
+              <div key={b.id} className="relative bg-white border-l-4 border-indigo-500 shadow-sm p-5 rounded-r-xl group">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
                      <span className="text-2xl">{sub.icon}</span>
@@ -142,7 +152,17 @@ export const TeacherDashboard = () => {
                         <span className="text-sm text-gray-500">{b.studentName}</span>
                      </div>
                   </div>
-                  <div className="text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">14:30 - 16:30</div>
+                  
+                  <div className="flex flex-col items-end gap-2">
+                      <div className="text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">14:30 - 16:30</div>
+                      
+                      <button 
+                        onClick={() => handleUnclaim(b.id)}
+                        className="text-xs text-red-500 border border-red-200 px-2 py-1 rounded bg-white hover:bg-red-500 hover:text-white transition-colors"
+                      >
+                         {t('releaseClass')}
+                      </button>
+                  </div>
                 </div>
                 
                 {/* Notes Section */}
@@ -173,7 +193,7 @@ export const TeacherDashboard = () => {
                     </div>
                   ) : (
                     <div 
-                        className="cursor-pointer group"
+                        className="cursor-pointer"
                         onClick={() => {
                             setEditingNoteId(b.id);
                             setNoteContent(b.notes || '');

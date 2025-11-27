@@ -16,7 +16,6 @@ export const StudentDashboard = () => {
   const [errorState, setErrorState] = useState('');
 
   const refreshData = () => {
-    // Force reload from service to ensure UI is in sync
     const currentBookings = dataService.getBookings().filter(b => b.studentId === user?.id);
     setBookings([...currentBookings]); 
     setAvailableDates(dataService.getAvailableDates());
@@ -49,26 +48,20 @@ export const StudentDashboard = () => {
     setTimeout(() => { setMessage(''); setErrorState(''); }, 4000);
   };
 
-  const handleCancel = (e: React.MouseEvent | React.TouchEvent, bookingId: string) => {
-    // Aggressively stop propagation to prevent parent clicks
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if ('nativeEvent' in e) e.nativeEvent.stopImmediatePropagation();
-    }
-    
-    // Simple confirm
-    if(window.confirm(t('cancelBooking') + "?")) {
-        try {
-          dataService.cancelBooking(bookingId);
-          setMessage("Booking cancelled");
-          // Clear selection if we just cancelled the currently selected subject (via the grid)
-          setSelectedSubjectId(''); 
-          refreshData(); 
-        } catch(err) {
-          console.error("Cancel failed", err);
-          setErrorState("Failed to cancel. Try again.");
-        }
+  const handleCancel = (e: React.MouseEvent, bookingId: string) => {
+    // Immediate cancellation (No confirm dialog to avoid browser blocking)
+    e.stopPropagation();
+    try {
+      dataService.cancelBooking(bookingId);
+      setMessage("Booking cancelled");
+      // If we cancelled the subject that was currently highlighted, unhighlight it
+      if (bookings.find(b => b.id === bookingId)?.subjectId === selectedSubjectId) {
+        setSelectedSubjectId('');
+      }
+      refreshData(); 
+    } catch(err) {
+      console.error("Cancel failed", err);
+      setErrorState("Failed to cancel.");
     }
   };
 
@@ -150,42 +143,37 @@ export const StudentDashboard = () => {
                     return (
                         <div
                             key={sub.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => {
-                                if (isBooked && existingBooking) {
-                                    handleCancel(e, existingBooking.id);
-                                } else {
-                                    toggleSubject(sub.id);
-                                }
-                            }}
-                            className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 group cursor-pointer select-none ${
+                            onClick={() => !isBooked && toggleSubject(sub.id)}
+                            className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 group select-none ${
                                 isBooked 
-                                ? 'bg-gray-100 border-gray-200 opacity-90 hover:bg-red-50 hover:border-red-300' 
+                                ? 'bg-gray-100 border-gray-200 cursor-default' 
                                 : selectedSubjectId === sub.id
-                                    ? 'border-orange-500 bg-orange-50 shadow-md ring-2 ring-orange-200 ring-offset-1'
-                                    : 'border-gray-100 hover:border-orange-200 hover:shadow-sm bg-white'
+                                    ? 'border-orange-500 bg-orange-50 shadow-md ring-2 ring-orange-200 cursor-pointer'
+                                    : 'border-gray-100 hover:border-orange-200 hover:shadow-sm bg-white cursor-pointer'
                             }`}
                         >
-                            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-200">{sub.icon}</div>
+                            <div className="text-3xl mb-3">{sub.icon}</div>
                             <div className={`font-semibold text-sm leading-tight ${selectedSubjectId === sub.id ? 'text-orange-900' : 'text-gray-700'}`}>
                                 {sub.translations[language]}
                             </div>
                             
+                            {/* Selected Indicator */}
                             {selectedSubjectId === sub.id && !isBooked && (
                                 <div className="absolute top-2 right-2 text-orange-500 animate-bounce-short">
                                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                 </div>
                             )}
 
-                            {isBooked && (
-                                <div className="absolute top-2 right-2">
-                                    <span className="group-hover:hidden text-[10px] font-bold uppercase border border-gray-400 text-gray-500 px-1.5 py-0.5 rounded bg-white">
-                                        {t('booked')}
-                                    </span>
-                                    <span className="hidden group-hover:inline-flex items-center gap-1 text-[10px] font-bold uppercase border border-red-500 text-red-500 px-1.5 py-0.5 rounded bg-white shadow-sm">
-                                        🗑️
-                                    </span>
+                            {/* Booked State - With Explicit Delete Button */}
+                            {isBooked && existingBooking && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-xl">
+                                    <button
+                                        onClick={(e) => handleCancel(e, existingBooking.id)}
+                                        className="bg-red-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow hover:bg-red-600 flex items-center gap-1 transition-transform transform hover:scale-105"
+                                        title={t('cancelBooking')}
+                                    >
+                                        🗑️ {t('cancelBooking')}
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -252,7 +240,7 @@ export const StudentDashboard = () => {
                             <button 
                                 type="button"
                                 onClick={(e) => handleCancel(e, b.id)}
-                                className="absolute top-1/2 -translate-y-1/2 right-3 z-20 bg-white text-red-500 p-3 rounded-lg border border-red-200 hover:bg-red-500 hover:text-white hover:border-red-600 transition-colors shadow-sm cursor-pointer flex items-center justify-center"
+                                className="absolute top-1/2 -translate-y-1/2 right-3 z-20 bg-red-50 text-red-500 p-2 rounded-lg border border-red-200 hover:bg-red-500 hover:text-white hover:border-red-600 transition-colors shadow-sm cursor-pointer flex items-center justify-center"
                                 title={t('cancelBooking')}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

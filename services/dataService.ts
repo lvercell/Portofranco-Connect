@@ -1,26 +1,36 @@
+
 import { User, Booking, Announcement, Role } from '../types';
 
-// Robust ID Generator (compatible with older browsers/HTTP)
+// Robust ID Generator
 const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
-// Safe Storage Wrapper (Falls back to memory if localStorage is blocked/fails)
-const safeStorage = {
-  memory: new Map<string, string>(),
-  getItem: (key: string): string | null => {
+// Feature detection for LocalStorage
+const isLocalStorageAvailable = () => {
     try {
-      return localStorage.getItem(key);
+        const test = '__storage_test__';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return true;
     } catch (e) {
-      return safeStorage.memory.get(key) || null;
+        return false;
     }
+};
+
+const useMemory = !isLocalStorageAvailable();
+const memoryStore = new Map<string, string>();
+
+const safeStorage = {
+  getItem: (key: string): string | null => {
+    if (useMemory) return memoryStore.get(key) || null;
+    return localStorage.getItem(key);
   },
   setItem: (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e) {
-      console.warn('LocalStorage failed, using memory fallback');
-      safeStorage.memory.set(key, value);
+    if (useMemory) {
+        memoryStore.set(key, value);
+    } else {
+        localStorage.setItem(key, value);
     }
   }
 };
@@ -35,9 +45,9 @@ const initData = () => {
     id: 'admin-seed-id',
     name: 'Sistema Admin',
     email: adminEmail,
-    password: '060696Satanas', // Hardcoded for prototype
+    password: '060696Satanas', 
     phone: '+39 000 000 0000',
-    role: Role.TEACHER, // Admin base role
+    role: Role.TEACHER, 
     age: 40,
     isAdmin: true,
     isLeader: true,
@@ -52,7 +62,7 @@ const initData = () => {
     console.log(`System Admin initialized: ${adminEmail}`);
   }
 
-  // 2. Ensure Seed Student exists (For testing)
+  // 2. Ensure Seed Student exists
   const studentEmail = 'student@doposcuola.com';
   const existingStudent = users.find(u => u.email.toLowerCase() === studentEmail);
   if (!existingStudent) {
@@ -82,7 +92,7 @@ const initData = () => {
 initData();
 
 export const dataService = {
-  generateId, // Export helper
+  generateId, 
 
   // User Methods
   getUsers: (): User[] => JSON.parse(safeStorage.getItem('users') || '[]'),
@@ -90,19 +100,15 @@ export const dataService = {
   createUser: (user: User) => {
     const users = dataService.getUsers();
     
-    // Auto-assign Admin for specific email
     if (user.email.toLowerCase() === 'lvercell@gmail.com') {
         user.isAdmin = true;
         user.isLeader = true; 
     }
 
-    // Ensure ID is set
     if (!user.id) user.id = generateId();
 
     users.push(user);
     safeStorage.setItem('users', JSON.stringify(users));
-    console.log(`[Email Service] Confirmation email sent to ${user.email}`);
-    if(user.parentEmail) console.log(`[Email Service] Parental consent email sent to ${user.parentEmail}`);
     return user;
   },
 
@@ -126,13 +132,11 @@ export const dataService = {
   createBooking: (student: User, subjectId: string, date: string) => {
     const bookings = dataService.getBookings();
     
-    // Rule: Max 2 subjects per day per student
     const studentDailyBookings = bookings.filter(b => b.studentId === student.id && b.date === date);
     if (studentDailyBookings.length >= 2) {
       throw new Error("MAX_SUBJECTS");
     }
     
-    // Rule: Duplicate check
     if (studentDailyBookings.find(b => b.subjectId === subjectId)) {
       throw new Error("DUPLICATE_SUBJECT");
     }
@@ -147,14 +151,12 @@ export const dataService = {
     
     bookings.push(newBooking);
     safeStorage.setItem('bookings', JSON.stringify(bookings));
-    console.log(`[Email Service] Booking confirmation sent to ${student.email}`);
   },
 
   cancelBooking: (bookingId: string) => {
     let bookings = dataService.getBookings();
     bookings = bookings.filter(b => b.id !== bookingId);
     safeStorage.setItem('bookings', JSON.stringify(bookings));
-    console.log(`Booking ${bookingId} cancelled.`);
   },
 
   claimBooking: (bookingId: string, teacher: User) => {
@@ -164,14 +166,22 @@ export const dataService = {
     if (index === -1) throw new Error("Booking not found");
     if (bookings[index].teacherId) throw new Error("Already claimed");
 
-    // Rule: Teacher cannot have duplicate student/subject same day
     const teacherDailyBookings = bookings.filter(b => b.teacherId === teacher.id && b.date === bookings[index].date);
     
     bookings[index].teacherId = teacher.id;
     bookings[index].teacherName = teacher.name;
     
     safeStorage.setItem('bookings', JSON.stringify(bookings));
-    console.log(`[Email Service] Assignment confirmation sent to ${teacher.email}`);
+  },
+
+  unclaimBooking: (bookingId: string) => {
+    const bookings = dataService.getBookings();
+    const index = bookings.findIndex(b => b.id === bookingId);
+    if (index !== -1) {
+        delete bookings[index].teacherId;
+        delete bookings[index].teacherName;
+        safeStorage.setItem('bookings', JSON.stringify(bookings));
+    }
   },
 
   updateBookingNotes: (bookingId: string, notes: string) => {
@@ -188,23 +198,18 @@ export const dataService = {
 
   createAnnouncement: (announcement: Announcement) => {
     const list = dataService.getAnnouncements();
-    // Ensure ID
     if (!announcement.id) announcement.id = generateId();
-    list.unshift(announcement); // Newest first
+    list.unshift(announcement); 
     safeStorage.setItem('announcements', JSON.stringify(list));
-    console.log(`[Email Service] Mass email sent regarding: ${announcement.title}`);
   },
 
-  // Utility to generate next available Tuesdays and Thursdays
   getAvailableDates: (): string[] => {
     const dates: string[] = [];
     const today = new Date();
-    // Look ahead 15 days
     for (let i = 1; i <= 15; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const day = d.getDay();
-      // 2 = Tuesday, 4 = Thursday
       if (day === 2 || day === 4) {
         dates.push(d.toISOString().split('T')[0]);
       }
