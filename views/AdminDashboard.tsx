@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { dataService } from '../services/dataService';
 import { useTheme } from '../context/ThemeContext';
-import { Role, User, Booking, SubjectDef, SUPPORTED_LANGUAGES } from '../types';
+import { Role, User, Booking, SubjectDef, SUPPORTED_LANGUAGES, Language } from '../types';
 
 const WALLPAPER_PRESETS = [
   { name: 'Library', url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop' },
@@ -261,7 +261,7 @@ export const AdminDashboard = () => {
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2">
                              {Object.keys(newSubNames).map(lang => (
                                  <div key={lang}>
-                                     <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">{SUPPORTED_LANGUAGES[lang as any]}</label>
+                                     <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">{SUPPORTED_LANGUAGES[lang as Language]}</label>
                                      <input 
                                         type="text" 
                                         value={newSubNames[lang]} 
