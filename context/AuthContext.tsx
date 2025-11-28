@@ -10,11 +10,13 @@ interface AuthContextType {
   login: (email: string) => Promise<void>;
   loginWithPassword: (email: string, password: string) => Promise<void>;
   verifyMfa: (code: string) => Promise<void>;
+  resendOtp: () => Promise<void>;
   logout: () => void;
   register: (user: User) => Promise<void>;
   loading: boolean;
   isPasswordRecovery: boolean; 
   setIsPasswordRecovery: (val: boolean) => void;
+  setLoginStep: (step: 'CREDENTIALS' | 'MFA') => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,7 +51,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
         // 2. Listen for future changes
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("Supabase Auth Event:", event);
+            // console.log("Supabase Auth Event:", event);
             
             if (event === 'SIGNED_IN' && session?.user) {
                 // Avoid reloading if we already have the user
@@ -113,7 +115,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const login = async (email: string) => {
     if (!supabase) throw new Error("Supabase not configured");
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { error } = await supabase.auth.signInWithOtp({ 
+        email,
+        options: { shouldCreateUser: false } // Only allow login if user exists (handled by UI usually, but good practice)
+    });
     if (error) throw error;
     setEmailForMfa(email);
     setLoginStep('MFA');
@@ -123,7 +128,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       if (!supabase) throw new Error("Supabase not configured");
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      setLoading(true); // Show loading while profile fetches via onAuthStateChange
+      setLoading(true); 
   };
 
   const verifyMfa = async (code: string) => {
@@ -136,6 +141,12 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     if (error) throw error;
     setLoading(true);
   };
+
+  const resendOtp = async () => {
+      if (!supabase || !emailForMfa) return;
+      const { error } = await supabase.auth.signInWithOtp({ email: emailForMfa });
+      if (error) throw error;
+  }
 
   const register = async (newUser: User) => {
     if (!supabase) throw new Error("Supabase not configured");
@@ -157,7 +168,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   return (
     <AuthContext.Provider value={{ 
-        user, loginStep, login, loginWithPassword, verifyMfa, logout, register, loading, isPasswordRecovery, setIsPasswordRecovery
+        user, loginStep, login, loginWithPassword, verifyMfa, resendOtp, logout, register, loading, isPasswordRecovery, setIsPasswordRecovery, setLoginStep
     }}>
       {children}
     </AuthContext.Provider>

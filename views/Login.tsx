@@ -6,7 +6,7 @@ import { Role, User } from '../types';
 import { dataService } from '../services/dataService';
 
 export const Login = () => {
-  const { login, loginWithPassword, verifyMfa, loginStep, register, loading, isPasswordRecovery, setIsPasswordRecovery } = useAuth();
+  const { login, loginWithPassword, verifyMfa, resendOtp, loginStep, setLoginStep, register, loading, isPasswordRecovery, setIsPasswordRecovery } = useAuth();
   const { t } = useLanguage();
   const [isRegistering, setIsRegistering] = useState(false);
   
@@ -23,6 +23,10 @@ export const Login = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // OTP Timer State
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [resendCount, setResendCount] = useState(0);
+
   // Register State
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -44,6 +48,25 @@ export const Login = () => {
         setAge(calculatedAge);
     }
   }, [dob]);
+
+  // Timer logic for OTP
+  useEffect(() => {
+      let interval: ReturnType<typeof setInterval>;
+      if (loginStep === 'MFA' && timeLeft > 0) {
+          interval = setInterval(() => {
+              setTimeLeft((prev) => prev - 1);
+          }, 1000);
+      }
+      return () => clearInterval(interval);
+  }, [loginStep, timeLeft]);
+
+  // Reset timer when entering MFA step
+  useEffect(() => {
+      if (loginStep === 'MFA') {
+          // 60s, then 90s, then 120s...
+          setTimeLeft(60 + (resendCount * 30));
+      }
+  }, [loginStep, resendCount]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
@@ -107,12 +130,31 @@ export const Login = () => {
           setError(loginMethod === 'PASSWORD' ? "Invalid credentials. If you signed up with Email/OTP, use that method first." : "Invalid credentials.");
       } else if (err.message && err.message.includes("Error sending magic link")) {
          setError("Error sending email. Rate limit exceeded or SMTP error.");
+      } else if (err.message && err.message.includes("Token has expired")) {
+         setError("Code expired or invalid. Please request a new one.");
       } else {
          setError(err.message || "An error occurred");
       }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleResend = async () => {
+      setError('');
+      setIsSubmitting(true);
+      try {
+          await resendOtp();
+          setResendCount(prev => prev + 1);
+          setSuccessMsg("Code resent! Check your email.");
+          // Timer will update via useEffect based on resendCount
+      } catch (err: any) {
+          setError(err.message || "Failed to resend.");
+      } finally {
+          setIsSubmitting(false);
+          // Clear success message after 3s
+          setTimeout(() => setSuccessMsg(''), 3000);
+      }
   };
 
   const handleRecoverPassword = async (e: React.FormEvent) => {
@@ -177,10 +219,11 @@ export const Login = () => {
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
             <h2 className="text-2xl font-bold text-gray-800">{t('verify')}</h2>
-            <p className="text-sm text-gray-500 mt-2">Check your email ({email}) for the code or click the link.</p>
+            <p className="text-sm text-gray-500 mt-2">Check your email <b>{email}</b> for the code.</p>
           </div>
           
-          {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-center text-sm font-medium">{error}</div>}
+          {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-center text-sm font-medium border border-red-100">{error}</div>}
+          {successMsg && <div className="bg-green-50 text-green-600 p-3 rounded-lg mb-4 text-center text-sm font-medium border border-green-100">{successMsg}</div>}
           
           <form onSubmit={handleLogin}>
              <div className="mb-6">
@@ -188,16 +231,41 @@ export const Login = () => {
                 type="text" 
                 value={otp} 
                 onChange={(e) => setOtp(e.target.value)} 
-                className="w-full text-center text-2xl tracking-widest border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all"
-                placeholder="• • • • • •"
+                className="w-full text-center text-3xl tracking-[0.5em] border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-mono"
+                placeholder="000000"
                 maxLength={6}
-                // Removed required to allow link-only flow conceptually, but keeps UX standard
+                required
               />
             </div>
             <button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50">
               {isSubmitting ? t('loading') : t('verify')}
             </button>
           </form>
+
+          <div className="mt-6 flex flex-col gap-3 text-center">
+              {timeLeft > 0 ? (
+                  <p className="text-sm text-gray-400">Resend code in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+              ) : (
+                  <button 
+                    onClick={handleResend}
+                    disabled={isSubmitting}
+                    className="text-indigo-600 font-bold text-sm hover:underline"
+                  >
+                      Resend Code
+                  </button>
+              )}
+
+              <button 
+                onClick={() => {
+                    setLoginStep('CREDENTIALS');
+                    setError('');
+                    setOtp('');
+                }}
+                className="text-gray-400 text-sm hover:text-gray-600"
+              >
+                  &larr; Change Email / Back
+              </button>
+          </div>
         </div>
       </div>
     );
