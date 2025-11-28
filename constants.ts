@@ -6,6 +6,11 @@ export const SUBJECTS_DATA: SubjectDef[] = [
   { id: 'math', translations: { it: 'Matematica', es: 'Matemáticas', en: 'Math', fr: 'Maths', de: 'Mathe' }, color: 'bg-blue-100 text-blue-800', icon: '➗' },
   { id: 'physics', translations: { it: 'Fisica', es: 'Física', en: 'Physics', fr: 'Physique', de: 'Physik' }, color: 'bg-red-100 text-red-800', icon: '⚛️' },
   { id: 'english', translations: { it: 'Inglese', es: 'Inglés', en: 'English', fr: 'Anglais', de: 'Englisch' }, color: 'bg-sky-100 text-sky-800', icon: '🇬🇧' },
+  { id: 'spanish', translations: { it: 'Spagnolo', es: 'Español', en: 'Spanish', fr: 'Espagnol', de: 'Spanisch' }, color: 'bg-yellow-100 text-yellow-800', icon: '🇪🇸' },
+  { id: 'geography', translations: { it: 'Geografia', es: 'Geografía', en: 'Geography', fr: 'Géographie', de: 'Geografie' }, color: 'bg-emerald-100 text-emerald-800', icon: '🌍' },
+  { id: 'law', translations: { it: 'Diritto', es: 'Derecho', en: 'Law', fr: 'Droit', "de": 'Recht' }, color: 'bg-slate-100 text-slate-800', icon: '⚖️' },
+  { id: 'italian_l2', translations: { it: 'Italiano per Stranieri', es: 'Italiano para Extranjeros', en: 'Italian L2', fr: 'Italien L2', de: 'Italienisch L2' }, color: 'bg-green-50 text-green-700', icon: '🇮🇹' },
+  { id: 'german', translations: { it: 'Tedesco', es: 'Alemán', en: 'German', fr: 'Allemand', de: 'Deutsch' }, color: 'bg-orange-100 text-orange-800', icon: '🇩🇪' },
 ];
 
 export const DICTIONARY: Record<Language, Record<string, string>> = {
@@ -113,7 +118,9 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errCodeExpired: 'Codice scaduto o non valido.',
     errParentRequired: 'Dettagli genitore richiesti.',
     errRegistrationFailed: 'Registrazione fallita.',
-    enterEmailRecovery: 'Inserisci la tua email per ricevere il link.'
+    enterEmailRecovery: 'Inserisci la tua email per ricevere il link.',
+    copyEmails: 'Copia Lista Email',
+    emailsCopied: 'Email copiate! Incolla in CCO.'
   },
   en: {
     welcome: 'After-School Portal',
@@ -219,7 +226,9 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errCodeExpired: 'Code expired or invalid.',
     errParentRequired: 'Parent details required.',
     errRegistrationFailed: 'Registration failed.',
-    enterEmailRecovery: 'Enter your email to receive a reset link.'
+    enterEmailRecovery: 'Enter your email to receive a reset link.',
+    copyEmails: 'Copy Email List',
+    emailsCopied: 'Emails copied! Paste into BCC.'
   },
   es: {
     welcome: 'Portal Doposcuola',
@@ -325,7 +334,9 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errCodeExpired: 'Código expirado o inválido.',
     errParentRequired: 'Datos del tutor requeridos.',
     errRegistrationFailed: 'Fallo en registro.',
-    enterEmailRecovery: 'Ingresa tu email para recibir el enlace.'
+    enterEmailRecovery: 'Ingresa tu email para recibir el enlace.',
+    copyEmails: 'Copiar Lista Email',
+    emailsCopied: '¡Copiado! Pega en CCO.'
   },
   fr: {
     welcome: 'Portail Doposcuola',
@@ -431,7 +442,9 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errCodeExpired: 'Code expiré ou invalide.',
     errParentRequired: 'Détails du parent requis.',
     errRegistrationFailed: 'Échec de l\'inscription.',
-    enterEmailRecovery: 'Entrez votre email pour recevoir le lien.'
+    enterEmailRecovery: 'Entrez votre email pour recevoir le lien.',
+    copyEmails: 'Copier Emails',
+    emailsCopied: 'Copié ! Coller en Cci.'
   },
   de: {
     welcome: 'Doposcuola Portal',
@@ -537,6 +550,8 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errCodeExpired: 'Code abgelaufen oder ungültig.',
     errParentRequired: 'Elterndaten erforderlich.',
     errRegistrationFailed: 'Registrierung fehlgeschlagen.',
-    enterEmailRecovery: 'Geben Sie Ihre E-Mail ein.'
+    enterEmailRecovery: 'Geben Sie Ihre E-Mail ein.',
+    copyEmails: 'E-Mails kopieren',
+    emailsCopied: 'Kopiert! In BCC einfügen.'
   }
 };

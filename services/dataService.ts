@@ -68,6 +68,12 @@ export const dataService = {
         isLeader: u.is_leader
     }));
   },
+  
+  getAllUserEmails: async (): Promise<string[]> => {
+    if (!isSupabaseConfigured()) return [];
+    const { data } = await supabase!.from('users').select('email');
+    return data?.map((u: any) => u.email) || [];
+  },
 
   getPendingUsers: async (): Promise<User[]> => {
     if (!isSupabaseConfigured()) return [];
@@ -233,17 +239,8 @@ export const dataService = {
         author_name: announcement.authorName,
         created_at: new Date().toISOString()
     }]);
-
-    if (sendEmail) {
-        // Mailto Trick for MVP
-        const { data } = await supabase!.from('users').select('email');
-        const allEmails = data?.map(u => u.email).join(',');
-        if(allEmails) {
-             const subject = encodeURIComponent(`Portofranco: ${announcement.title}`);
-             const body = encodeURIComponent(announcement.content + "\n\n--\nPortofranco Connect");
-             window.open(`mailto:?bcc=${allEmails}&subject=${subject}&body=${body}`);
-        }
-    }
+    
+    // Email sending logic is handled in the UI via Copy Button to avoid exposing API keys
   },
 
   deleteAnnouncement: async (id: string) => {

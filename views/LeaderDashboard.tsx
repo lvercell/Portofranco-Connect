@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,7 +12,6 @@ export const LeaderDashboard = () => {
   // Announcements
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [sendEmail, setSendEmail] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   
   // Holiday State
@@ -41,12 +41,21 @@ export const LeaderDashboard = () => {
     const newAnnouncement: Partial<Announcement> = {
       title, content, date: new Date().toLocaleDateString(), authorName: user.name
     };
-    await dataService.createAnnouncement(newAnnouncement as Announcement, sendEmail);
+    await dataService.createAnnouncement(newAnnouncement as Announcement, false);
     setTitle('');
     setContent('');
-    setSendEmail(false);
     loadData();
     alert("Announcement published!");
+  };
+
+  const handleCopyEmails = async () => {
+      const emails = await dataService.getAllUserEmails();
+      if (emails.length > 0) {
+          await navigator.clipboard.writeText(emails.join(', '));
+          alert(t('emailsCopied'));
+      } else {
+          alert("No users found.");
+      }
   };
 
   const handleDeleteAnnouncement = async (id: string) => {
@@ -100,17 +109,16 @@ export const LeaderDashboard = () => {
             />
             <textarea value={content} onChange={e => setContent(e.target.value)} rows={4} className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-3 rounded" placeholder="Content..."/>
             
-            <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/30 p-3 rounded">
-                <input 
-                    type="checkbox" 
-                    id="sendEmail" 
-                    checked={sendEmail} 
-                    onChange={e => setSendEmail(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                />
-                <label htmlFor="sendEmail" className="text-sm text-gray-700 dark:text-gray-300 font-medium cursor-pointer">
-                    Send Email Notification (Opens Mail App)
-                </label>
+            <div className="flex justify-between items-center bg-purple-50 dark:bg-purple-900/30 p-3 rounded">
+                <button 
+                    onClick={handleCopyEmails}
+                    className="flex items-center gap-2 text-sm text-purple-700 dark:text-purple-300 font-bold hover:underline"
+                >
+                    📋 {t('copyEmails')}
+                </button>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Paste into BCC in your email app.
+                </div>
             </div>
 
             <div className="flex justify-end">
