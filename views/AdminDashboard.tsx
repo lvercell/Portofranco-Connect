@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { dataService } from '../services/dataService';
@@ -245,14 +246,14 @@ export const AdminDashboard = () => {
                             <div className="w-32">
                                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('color')}</label>
                                 <select value={newSubColor} onChange={e => setNewSubColor(e.target.value)} className="w-full border dark:border-gray-500 dark:bg-gray-800 dark:text-white p-2 rounded text-sm">
-                                    <option value="bg-blue-100 text-blue-800">Blue</option>
-                                    <option value="bg-red-100 text-red-800">Red</option>
-                                    <option value="bg-green-100 text-green-800">Green</option>
-                                    <option value="bg-yellow-100 text-yellow-800">Yellow</option>
-                                    <option value="bg-purple-100 text-purple-800">Purple</option>
-                                    <option value="bg-pink-100 text-pink-800">Pink</option>
-                                    <option value="bg-orange-100 text-orange-800">Orange</option>
-                                    <option value="bg-gray-100 text-gray-800">Gray</option>
+                                    <option value="bg-blue-100 text-blue-800">{t('col_blue')}</option>
+                                    <option value="bg-red-100 text-red-800">{t('col_red')}</option>
+                                    <option value="bg-green-100 text-green-800">{t('col_green')}</option>
+                                    <option value="bg-yellow-100 text-yellow-800">{t('col_yellow')}</option>
+                                    <option value="bg-purple-100 text-purple-800">{t('col_purple')}</option>
+                                    <option value="bg-pink-100 text-pink-800">{t('col_pink')}</option>
+                                    <option value="bg-orange-100 text-orange-800">{t('col_orange')}</option>
+                                    <option value="bg-gray-100 text-gray-800">{t('col_gray')}</option>
                                 </select>
                             </div>
                           </div>

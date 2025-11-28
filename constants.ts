@@ -120,7 +120,16 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errRegistrationFailed: 'Registrazione fallita.',
     enterEmailRecovery: 'Inserisci la tua email per ricevere il link.',
     copyEmails: 'Copia Lista Email',
-    emailsCopied: 'Email copiate! Incolla in CCO.'
+    emailsCopied: 'Email copiate! Incolla in CCO.',
+    // Colors
+    col_blue: 'Blu',
+    col_red: 'Rosso',
+    col_green: 'Verde',
+    col_yellow: 'Giallo',
+    col_purple: 'Viola',
+    col_pink: 'Rosa',
+    col_orange: 'Arancione',
+    col_gray: 'Grigio',
   },
   en: {
     welcome: 'After-School Portal',
@@ -228,7 +237,16 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errRegistrationFailed: 'Registration failed.',
     enterEmailRecovery: 'Enter your email to receive a reset link.',
     copyEmails: 'Copy Email List',
-    emailsCopied: 'Emails copied! Paste into BCC.'
+    emailsCopied: 'Emails copied! Paste into BCC.',
+    // Colors
+    col_blue: 'Blue',
+    col_red: 'Red',
+    col_green: 'Green',
+    col_yellow: 'Yellow',
+    col_purple: 'Purple',
+    col_pink: 'Pink',
+    col_orange: 'Orange',
+    col_gray: 'Gray',
   },
   es: {
     welcome: 'Portal Doposcuola',
@@ -336,7 +354,16 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errRegistrationFailed: 'Fallo en registro.',
     enterEmailRecovery: 'Ingresa tu email para recibir el enlace.',
     copyEmails: 'Copiar Lista Email',
-    emailsCopied: '¡Copiado! Pega en CCO.'
+    emailsCopied: '¡Copiado! Pega en CCO.',
+    // Colors
+    col_blue: 'Azul',
+    col_red: 'Rojo',
+    col_green: 'Verde',
+    col_yellow: 'Amarillo',
+    col_purple: 'Morado',
+    col_pink: 'Rosa',
+    col_orange: 'Naranja',
+    col_gray: 'Gris',
   },
   fr: {
     welcome: 'Portail Doposcuola',
@@ -444,7 +471,16 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errRegistrationFailed: 'Échec de l\'inscription.',
     enterEmailRecovery: 'Entrez votre email pour recevoir le lien.',
     copyEmails: 'Copier Emails',
-    emailsCopied: 'Copié ! Coller en Cci.'
+    emailsCopied: 'Copié ! Coller en Cci.',
+    // Colors
+    col_blue: 'Bleu',
+    col_red: 'Rouge',
+    col_green: 'Vert',
+    col_yellow: 'Jaune',
+    col_purple: 'Violet',
+    col_pink: 'Rose',
+    col_orange: 'Orange',
+    col_gray: 'Gris',
   },
   de: {
     welcome: 'Doposcuola Portal',
@@ -552,6 +588,15 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     errRegistrationFailed: 'Registrierung fehlgeschlagen.',
     enterEmailRecovery: 'Geben Sie Ihre E-Mail ein.',
     copyEmails: 'E-Mails kopieren',
-    emailsCopied: 'Kopiert! In BCC einfügen.'
+    emailsCopied: 'Kopiert! In BCC einfügen.',
+    // Colors
+    col_blue: 'Blau',
+    col_red: 'Rot',
+    col_green: 'Grün',
+    col_yellow: 'Gelb',
+    col_purple: 'Lila',
+    col_pink: 'Rosa',
+    col_orange: 'Orange',
+    col_gray: 'Grau',
   }
 };
