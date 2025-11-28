@@ -132,9 +132,9 @@ export const Login = () => {
       } else {
          setError(err.message || "An error occurred");
       }
-    } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Make sure to stop submitting state on error
     }
+    // Do not set submitting false on success, wait for AuthContext reload
   };
 
   const handleResend = async () => {
@@ -201,9 +201,8 @@ export const Login = () => {
       } else {
          setError(err.message || "Registration failed.");
       }
-    } finally {
-        setIsSubmitting(false);
-    }
+      setIsSubmitting(false);
+    } 
   };
 
   // --- MFA / OTP Input Screen ---
@@ -225,8 +224,8 @@ export const Login = () => {
               <input 
                 type="text" 
                 value={otp} 
-                onChange={(e) => setOtp(e.target.value)} 
-                className="w-full text-center text-3xl tracking-[0.25em] border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-mono"
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} 
+                className="w-full text-center text-2xl tracking-[0.2em] border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-mono"
                 placeholder="00000000"
                 maxLength={8}
                 required

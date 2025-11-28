@@ -84,14 +84,16 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
          // 1. Try to get existing profile from public table
          let profile = await dataService.getUserById(uid);
 
-         // 2. If NO public profile, but we have METADATA (from registration), create it now.
-         // This fixes the "Magic Link does nothing" bug.
-         if (!profile && sessionUser.user_metadata?.full_name) {
-             const meta = sessionUser.user_metadata;
+         // 2. If NO public profile, creates it from Metadata (Registration data)
+         // This is critical for Magic Link/OTP flows where data might be lost otherwise
+         if (!profile) {
+             const meta = sessionUser.user_metadata || {};
+             
+             // Fallback values if metadata is empty (e.g. created via API console)
              const newUser: User = {
                  id: uid,
                  email: email,
-                 name: meta.full_name,
+                 name: meta.full_name || email.split('@')[0], // Fallback name
                  phone: meta.phone || '',
                  role: meta.role || Role.STUDENT,
                  age: meta.age || 0,
@@ -138,6 +140,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const loginWithPassword = async (email: string, password: string) => {
       if (!supabase) throw new Error("Supabase not configured");
       const cleanEmail = email.trim().toLowerCase();
+      // This throws error if failed, caught by Login component
       const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
       if (error) throw error;
       setLoading(true); 
@@ -145,10 +148,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const verifyMfa = async (code: string) => {
     if (!supabase) return;
-    // 'email' type covers both magic link token and numeric OTP in most Supabase configs
+    
+    // Remove spaces from code (e.g. "12 34 56" -> "123456")
+    const cleanCode = code.replace(/\s/g, '');
+
     const { error } = await supabase.auth.verifyOtp({
         email: emailForMfa,
-        token: code.trim(),
+        token: cleanCode,
         type: 'email'
     });
     if (error) throw error;
