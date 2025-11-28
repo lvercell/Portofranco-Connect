@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect, PropsWithChildre
 interface ThemeContextType {
   backgroundImage: string;
   setBackgroundImage: (url: string) => void;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -11,13 +13,26 @@ const DEFAULT_BG = 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1
 
 export const ThemeProvider = ({ children }: PropsWithChildren) => {
   const [backgroundImage, setBackgroundImage] = useState<string>(DEFAULT_BG);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('app_bg');
-      if (stored) setBackgroundImage(stored);
+      // Load BG
+      const storedBg = localStorage.getItem('app_bg');
+      if (storedBg) setBackgroundImage(storedBg);
+
+      // Load Dark Mode
+      const storedDark = localStorage.getItem('app_dark_mode');
+      if (storedDark) {
+        setIsDarkMode(JSON.parse(storedDark));
+      } else {
+        // System preference detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+           setIsDarkMode(true);
+        }
+      }
     } catch (e) {
-      console.warn('Theme: LocalStorage access denied, using default.');
+      console.warn('Theme: LocalStorage access denied.');
     }
   }, []);
 
@@ -26,12 +41,27 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
     try {
       localStorage.setItem('app_bg', url);
     } catch (e) {
-      console.warn('Theme: Could not save background to LocalStorage.');
+      console.warn('Theme: Could not save background.');
     }
   };
 
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => {
+        const newVal = !prev;
+        try {
+            localStorage.setItem('app_dark_mode', JSON.stringify(newVal));
+        } catch(e) {}
+        return newVal;
+    });
+  };
+
   return (
-    <ThemeContext.Provider value={{ backgroundImage, setBackgroundImage: handleSetBackground }}>
+    <ThemeContext.Provider value={{ 
+        backgroundImage, 
+        setBackgroundImage: handleSetBackground,
+        isDarkMode,
+        toggleDarkMode 
+    }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -16,7 +15,6 @@ export const TeacherDashboard = () => {
   const [availableDates, setAvailableDates] = useState<string[]>([]);
 
   const refresh = async () => {
-    // Fetch bookings, subjects, and config concurrently
     const [data, subs, classDays] = await Promise.all([
         dataService.getBookings(),
         dataService.getSubjects(),
@@ -70,7 +68,6 @@ export const TeacherDashboard = () => {
     return subjects.find(s => s.id === id) || { translations: { [language]: id }, color: 'bg-gray-100', icon: '❓' };
   };
 
-  // Filter logic
   const unclaimed = allBookings.filter(b => b.date === activeDate && !b.teacherId);
   const myClasses = allBookings.filter(b => b.date === activeDate && b.teacherId === user?.id);
 
@@ -79,7 +76,7 @@ export const TeacherDashboard = () => {
       
       {/* Date Navigation */}
       <div className="flex justify-center mb-6">
-        <div className="bg-white p-2 rounded-full shadow-sm border inline-flex gap-2 flex-wrap justify-center max-w-full overflow-x-auto">
+        <div className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm border dark:border-gray-700 inline-flex gap-2 flex-wrap justify-center max-w-full overflow-x-auto">
             {availableDates.map(date => (
             <button
                 key={date}
@@ -87,7 +84,7 @@ export const TeacherDashboard = () => {
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 activeDate === date 
                     ? 'bg-indigo-600 text-white shadow-md' 
-                    : 'bg-transparent text-gray-500 hover:bg-gray-100'
+                    : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
                 {new Date(date).toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' })}
@@ -99,9 +96,9 @@ export const TeacherDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         
         {/* Available Pool */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-fit">
-          <div className="bg-gray-50 p-4 border-b border-gray-100 shrink-0">
-             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col h-fit">
+          <div className="bg-gray-50 dark:bg-gray-700 p-4 border-b border-gray-100 dark:border-gray-600 shrink-0">
+             <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
                 {t('availableClasses')}
              </h2>
@@ -116,22 +113,22 @@ export const TeacherDashboard = () => {
             {unclaimed.map(b => {
                const sub = getSubjectDetails(b.subjectId);
                return (
-                <div key={b.id} className="group border border-gray-200 p-4 rounded-xl flex flex-col sm:flex-row sm:justify-between sm:items-center hover:shadow-md transition-all hover:border-green-300 gap-3">
+                <div key={b.id} className="group border border-gray-200 dark:border-gray-600 p-4 rounded-xl flex flex-col sm:flex-row sm:justify-between sm:items-center hover:shadow-md transition-all hover:border-green-300 dark:hover:border-green-500 gap-3">
                     <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl bg-gray-50 shadow-inner`}>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl bg-gray-50 dark:bg-gray-600 shadow-inner`}>
                             {sub.icon}
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-900 text-lg">{sub.translations[language] || sub.translations['en']}</h3>
-                            <div className="text-sm text-gray-500 flex items-center gap-1">
-                                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs uppercase font-bold tracking-wide">Student</span>
+                            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">{sub.translations[language] || sub.translations['en']}</h3>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded text-xs uppercase font-bold tracking-wide">Student</span>
                                 {b.studentName}
                             </div>
                         </div>
                     </div>
                     <button
                         onClick={() => handleClaim(b.id)}
-                        className="w-full sm:w-auto bg-white text-green-700 border border-green-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                        className="w-full sm:w-auto bg-white dark:bg-gray-700 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 hover:text-white transition-all shadow-sm"
                     >
                         {t('claim')}
                     </button>
@@ -142,9 +139,9 @@ export const TeacherDashboard = () => {
         </div>
 
         {/* My Schedule */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-fit">
-            <div className="bg-indigo-50 p-4 border-b border-indigo-100 shrink-0">
-             <h2 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col h-fit">
+            <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 border-b border-indigo-100 dark:border-indigo-800 shrink-0">
+             <h2 className="text-lg font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
                 <span className="text-xl">👩‍🏫</span>
                 {t('myClasses')}
              </h2>
@@ -159,21 +156,21 @@ export const TeacherDashboard = () => {
             {myClasses.map(b => {
               const sub = getSubjectDetails(b.subjectId);
               return (
-              <div key={b.id} className="relative bg-white border-l-4 border-indigo-500 shadow-sm p-5 rounded-r-xl group">
+              <div key={b.id} className="relative bg-white dark:bg-gray-700 border-l-4 border-indigo-500 shadow-sm p-5 rounded-r-xl group">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
                      <span className="text-2xl">{sub.icon}</span>
                      <div>
-                        <span className="font-bold text-gray-800 block text-lg">{sub.translations[language] || sub.translations['en']}</span>
-                        <span className="text-sm text-gray-500">{b.studentName}</span>
+                        <span className="font-bold text-gray-800 dark:text-gray-100 block text-lg">{sub.translations[language] || sub.translations['en']}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-300">{b.studentName}</span>
                      </div>
                   </div>
                   
                   <div className="flex flex-col items-end gap-2">
-                      <div className="text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">14:30 - 16:30</div>
+                      <div className="text-xs font-mono text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50 px-2 py-1 rounded border border-indigo-100 dark:border-indigo-800">14:30 - 16:30</div>
                       <button 
                         onClick={() => handleUnclaim(b.id)}
-                        className="text-xs text-red-500 border border-red-200 px-2 py-1 rounded bg-white hover:bg-red-500 hover:text-white transition-colors"
+                        className="text-xs text-red-500 border border-red-200 dark:border-red-800 px-2 py-1 rounded bg-white dark:bg-gray-600 hover:bg-red-500 hover:text-white transition-colors"
                       >
                          {t('releaseClass')}
                       </button>
@@ -181,28 +178,28 @@ export const TeacherDashboard = () => {
                 </div>
 
                 {/* Attendance Controls */}
-                <div className="flex gap-2 mb-4 border-t border-b py-2 border-gray-100">
+                <div className="flex gap-2 mb-4 border-t border-b py-2 border-gray-100 dark:border-gray-600">
                     <span className="text-xs font-bold text-gray-400 uppercase self-center mr-2">{t('attendance')}:</span>
                     <button 
                         onClick={() => markAttendance(b.id, 'PRESENT')}
-                        className={`text-xs px-3 py-1 rounded-full border transition-all ${b.attendance === 'PRESENT' ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-400 hover:border-green-400'}`}
+                        className={`text-xs px-3 py-1 rounded-full border transition-all ${b.attendance === 'PRESENT' ? 'bg-green-500 text-white border-green-600' : 'bg-white dark:bg-gray-600 text-gray-400 hover:border-green-400'}`}
                     >
                         ✅ {t('markPresent')}
                     </button>
                     <button 
                         onClick={() => markAttendance(b.id, 'ABSENT')}
-                        className={`text-xs px-3 py-1 rounded-full border transition-all ${b.attendance === 'ABSENT' ? 'bg-red-500 text-white border-red-600' : 'bg-white text-gray-400 hover:border-red-400'}`}
+                        className={`text-xs px-3 py-1 rounded-full border transition-all ${b.attendance === 'ABSENT' ? 'bg-red-500 text-white border-red-600' : 'bg-white dark:bg-gray-600 text-gray-400 hover:border-red-400'}`}
                     >
                         ❌ {t('markAbsent')}
                     </button>
                 </div>
                 
                 {/* Notes Section */}
-                <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-100">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 border border-yellow-100 dark:border-yellow-800">
                   {editingNoteId === b.id ? (
                     <div>
                       <textarea
-                        className="w-full p-2 border rounded text-sm mb-2 focus:ring-2 focus:ring-yellow-400 outline-none"
+                        className="w-full p-2 border rounded text-sm mb-2 focus:ring-2 focus:ring-yellow-400 outline-none dark:bg-gray-600 dark:text-white"
                         value={noteContent}
                         onChange={(e) => setNoteContent(e.target.value)}
                         placeholder="Write student progress notes here..."
@@ -211,7 +208,7 @@ export const TeacherDashboard = () => {
                       <div className="flex justify-end gap-2">
                         <button 
                            onClick={() => setEditingNoteId(null)}
-                           className="text-xs text-gray-500 hover:text-gray-700"
+                           className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700"
                         >
                           Cancel
                         </button>
@@ -232,10 +229,10 @@ export const TeacherDashboard = () => {
                         }}
                     >
                        <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-bold text-yellow-700 uppercase tracking-wide">{t('notes')}</span>
+                            <span className="text-xs font-bold text-yellow-700 dark:text-yellow-400 uppercase tracking-wide">{t('notes')}</span>
                             <span className="text-xs text-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity">Edit ✏️</span>
                        </div>
-                       <p className={`text-sm ${b.notes ? 'text-gray-700' : 'text-gray-400 italic'}`}>
+                       <p className={`text-sm ${b.notes ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 italic'}`}>
                            {b.notes || "Click to add notes regarding this session..."}
                        </p>
                     </div>

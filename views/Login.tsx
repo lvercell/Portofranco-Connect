@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -65,9 +64,8 @@ export const Login = () => {
       }
   }, [loginStep, resendCount]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">{t('loading')}</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center dark:text-white">{t('loading')}</div>;
 
-  // Helper to map error messages to translations
   const getErrorMessage = (msg: string) => {
      if (msg.includes("Invalid login credentials") || msg.includes("Invalid credentials")) return t('errInvalidCreds');
      if (msg.includes("Error sending magic link")) return t('errRateLimit');
@@ -75,7 +73,7 @@ export const Login = () => {
      return msg || "Error";
   };
 
-  // --- PASSWORD RECOVERY FLOW (Set New Password) ---
+  // --- PASSWORD RECOVERY FLOW ---
   if (isPasswordRecovery) {
       const handleUpdatePassword = async (e: React.FormEvent) => {
           e.preventDefault();
@@ -97,16 +95,16 @@ export const Login = () => {
 
       return (
         <div className="min-h-[80vh] flex items-center justify-center">
-            <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100">
-                <h2 className="text-2xl font-bold text-center mb-6">{t('setNewPassword')}</h2>
+            <div className="max-w-md w-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">{t('setNewPassword')}</h2>
                 {successMsg && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">{successMsg}</div>}
                 {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4">{error}</div>}
                 <form onSubmit={handleUpdatePassword} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('enterNewPassword')}</label>
-                        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border p-2 rounded" required minLength={6} />
+                        <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">{t('enterNewPassword')}</label>
+                        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border dark:border-gray-600 p-2 rounded bg-white dark:bg-gray-700 dark:text-white" required minLength={6} />
                     </div>
-                    <button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">
+                    <button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">
                         {isSubmitting ? t('loading') : t('updatePassword')}
                     </button>
                 </form>
@@ -132,9 +130,8 @@ export const Login = () => {
     } catch (err: any) {
       console.error(err);
       setError(getErrorMessage(err.message));
-      setIsSubmitting(false); // Make sure to stop submitting state on error
+      setIsSubmitting(false);
     }
-    // Do not set submitting false on success, wait for AuthContext reload
   };
 
   const handleResend = async () => {
@@ -178,7 +175,6 @@ export const Login = () => {
       return;
     }
 
-    // Prepare User Object - ID will be filled by AuthContext on success
     const newUser: User = {
       id: '', 
       name,
@@ -209,11 +205,11 @@ export const Login = () => {
   if (loginStep === 'MFA') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
-        <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100">
+        <div className="max-w-md w-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100 dark:border-gray-700">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
-            <h2 className="text-2xl font-bold text-gray-800">{t('verify')}</h2>
-            <p className="text-sm text-gray-500 mt-2">{t('checkEmail')} <b>{email}</b></p>
+            <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{t('verify')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('checkEmail')} <b>{email}</b></p>
           </div>
           
           {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-center text-sm font-medium border border-red-100">{error}</div>}
@@ -225,7 +221,7 @@ export const Login = () => {
                 type="text" 
                 value={otp} 
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} 
-                className="w-full text-center text-2xl tracking-[0.2em] border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-mono"
+                className="w-full text-center text-2xl tracking-[0.2em] border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-500 outline-none transition-all font-mono"
                 placeholder="00000000"
                 maxLength={8}
                 required
@@ -240,11 +236,7 @@ export const Login = () => {
               {timeLeft > 0 ? (
                   <p className="text-sm text-gray-400">{t('resendCodeIn')} {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
               ) : (
-                  <button 
-                    onClick={handleResend}
-                    disabled={isSubmitting}
-                    className="text-indigo-600 font-bold text-sm hover:underline"
-                  >
+                  <button onClick={handleResend} disabled={isSubmitting} className="text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:underline">
                       {t('resendCodeBtn')}
                   </button>
               )}
@@ -255,7 +247,7 @@ export const Login = () => {
                     setError('');
                     setOtp('');
                 }}
-                className="text-gray-400 text-sm hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm"
               >
                   &larr; {t('changeEmail')}
               </button>
@@ -265,26 +257,26 @@ export const Login = () => {
     );
   }
 
-  // --- RECOVERY SCREEN (Forgot Password) ---
+  // --- RECOVERY SCREEN ---
   if (isRecovering) {
       return (
         <div className="min-h-[80vh] flex items-center justify-center">
-            <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100">
-                <h2 className="text-2xl font-bold text-center mb-2">{t('recoverPassword')}</h2>
-                <p className="text-center text-gray-500 text-sm mb-6">{t('enterEmailRecovery')}</p>
+            <div className="max-w-md w-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-center mb-2 text-gray-800 dark:text-white">{t('recoverPassword')}</h2>
+                <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-6">{t('enterEmailRecovery')}</p>
                 {successMsg && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">{successMsg}</div>}
                 {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4">{error}</div>}
                 <form onSubmit={handleRecoverPassword} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('email')}</label>
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded" required />
+                        <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">{t('email')}</label>
+                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white p-2 rounded" required />
                     </div>
-                    <button type="submit" disabled={isSubmitting} className="w-full bg-black text-white py-3 rounded-xl font-bold">
+                    <button type="submit" disabled={isSubmitting} className="w-full bg-black dark:bg-gray-700 text-white py-3 rounded-xl font-bold hover:bg-gray-800 dark:hover:bg-gray-600">
                         {isSubmitting ? t('loading') : t('sendRecoveryLink')}
                     </button>
                 </form>
                 <div className="mt-4 text-center">
-                    <button onClick={() => setIsRecovering(false)} className="text-sm text-indigo-600 hover:underline">{t('backToLogin')}</button>
+                    <button onClick={() => setIsRecovering(false)} className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">{t('backToLogin')}</button>
                 </div>
             </div>
         </div>
@@ -294,27 +286,27 @@ export const Login = () => {
   // --- MAIN LOGIN / REGISTER SCREEN ---
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12">
-      <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100 relative overflow-hidden">
+      <div className="max-w-md w-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
         
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
 
-        <h2 className="text-3xl font-black mb-6 text-center text-gray-800 tracking-tight">
+        <h2 className="text-3xl font-black mb-6 text-center text-gray-800 dark:text-white tracking-tight">
           {isRegistering ? t('register') : t('login')}
         </h2>
         
         {!isRegistering && (
-            <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
+            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg mb-6">
                 <button 
                     type="button"
                     onClick={() => setLoginMethod('OTP')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${loginMethod === 'OTP' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${loginMethod === 'OTP' ? 'bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}
                 >
                     {t('loginWithOtp')}
                 </button>
                 <button 
                     type="button"
                     onClick={() => setLoginMethod('PASSWORD')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${loginMethod === 'PASSWORD' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${loginMethod === 'PASSWORD' ? 'bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}
                 >
                     {t('loginWithPassword')}
                 </button>
@@ -328,31 +320,31 @@ export const Login = () => {
           {isRegistering && (
             <>
               <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('role')}</label>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">{t('role')}</label>
                 <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => setRole(Role.STUDENT)} className={`p-2 rounded border ${role === Role.STUDENT ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200'}`}>{t('student')}</button>
-                    <button type="button" onClick={() => setRole(Role.TEACHER)} className={`p-2 rounded border ${role === Role.TEACHER ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200'}`}>{t('teacher')}</button>
+                    <button type="button" onClick={() => setRole(Role.STUDENT)} className={`p-2 rounded border ${role === Role.STUDENT ? 'bg-indigo-50 dark:bg-indigo-900 border-indigo-500 text-indigo-700 dark:text-indigo-300' : 'border-gray-200 dark:border-gray-600 dark:text-gray-300'}`}>{t('student')}</button>
+                    <button type="button" onClick={() => setRole(Role.TEACHER)} className={`p-2 rounded border ${role === Role.TEACHER ? 'bg-indigo-50 dark:bg-indigo-900 border-indigo-500 text-indigo-700 dark:text-indigo-300' : 'border-gray-200 dark:border-gray-600 dark:text-gray-300'}`}>{t('teacher')}</button>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('name')}</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">{t('name')}</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
               </div>
             </>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('email')}</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
+            <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">{t('email')}</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
           </div>
 
           {!isRegistering && loginMethod === 'PASSWORD' && (
               <div>
                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-xs font-bold text-gray-600 uppercase">{t('password')}</label>
+                    <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">{t('password')}</label>
                     <button type="button" onClick={() => setIsRecovering(true)} className="text-xs text-indigo-500 hover:underline">{t('cantAccess')}</button>
                  </div>
-                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
+                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
               </div>
           )}
 
@@ -360,32 +352,32 @@ export const Login = () => {
             <>
                <div className="grid grid-cols-2 gap-4">
                  <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('phone')}</label>
-                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg" required />
+                    <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">{t('phone')}</label>
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white border p-2 rounded-lg" required />
                  </div>
                  <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('dob')}</label>
-                    <input type="date" value={dob} onChange={e => setDob(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg" required />
+                    <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">{t('dob')}</label>
+                    <input type="date" value={dob} onChange={e => setDob(e.target.value)} className="w-full border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white border p-2 rounded-lg" required />
                  </div>
                </div>
                
                {age > 0 && (
-                  <div className="text-xs text-gray-500 text-right">{t('age')}: {age}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 text-right">{t('age')}: {age}</div>
                )}
 
               {age < 16 && age > 0 && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl mt-2">
-                  <p className="text-xs text-amber-800 mb-2 font-medium">⚠️ {t('gdprNotice')}</p>
+                <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4 rounded-xl mt-2">
+                  <p className="text-xs text-amber-800 dark:text-amber-200 mb-2 font-medium">⚠️ {t('gdprNotice')}</p>
                   <div className="space-y-2">
-                     <input type="text" placeholder={t('parentName')} value={parentName} onChange={e => setParentName(e.target.value)} className="w-full border border-amber-200 p-2 rounded text-sm" required />
-                     <input type="email" placeholder={t('parentEmail')} value={parentEmail} onChange={e => setParentEmail(e.target.value)} className="w-full border border-amber-200 p-2 rounded text-sm" required />
+                     <input type="text" placeholder={t('parentName')} value={parentName} onChange={e => setParentName(e.target.value)} className="w-full border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-700 dark:text-white p-2 rounded text-sm" required />
+                     <input type="email" placeholder={t('parentEmail')} value={parentEmail} onChange={e => setParentEmail(e.target.value)} className="w-full border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-700 dark:text-white p-2 rounded text-sm" required />
                   </div>
                 </div>
               )}
             </>
           )}
 
-          <button type="submit" disabled={isSubmitting} className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-black transition shadow-lg mt-4 disabled:opacity-50">
+          <button type="submit" disabled={isSubmitting} className="w-full bg-gray-900 dark:bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-black dark:hover:bg-indigo-700 transition shadow-lg mt-4 disabled:opacity-50">
             {isSubmitting ? t('loading') : (isRegistering ? t('registerButton') : t('loginButton'))}
           </button>
         </form>
@@ -398,7 +390,7 @@ export const Login = () => {
                 setEmail('');
                 setLoginMethod('OTP'); 
             }}
-            className="text-sm text-indigo-600 font-semibold hover:underline"
+            className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
           >
             {isRegistering ? t('login') : t('register')}
           </button>

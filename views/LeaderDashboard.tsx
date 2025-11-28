@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -59,13 +58,11 @@ export const LeaderDashboard = () => {
 
   const handleAddHoliday = async () => {
       if (!holidayStartDate || !holidayReason) return;
-      
       const end = holidayEndDate || holidayStartDate;
       if (end < holidayStartDate) {
           alert("End date cannot be before start date");
           return;
       }
-
       await dataService.createHolidayRange(holidayStartDate, end, holidayReason);
       setHolidayStartDate('');
       setHolidayEndDate('');
@@ -94,16 +91,16 @@ export const LeaderDashboard = () => {
       
       {/* 1. Announcements */}
       <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-purple-100">
-            <h2 className="text-2xl font-bold mb-4 text-purple-700">{t('newAnnouncement')}</h2>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-purple-100 dark:border-purple-900">
+            <h2 className="text-2xl font-bold mb-4 text-purple-700 dark:text-purple-300">{t('newAnnouncement')}</h2>
             <div className="space-y-4">
             <input 
                 type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" 
-                className="w-full text-lg font-bold border-b-2 border-gray-200 p-2 focus:outline-none focus:border-purple-500"
+                className="w-full text-lg font-bold border-b-2 border-gray-200 dark:border-gray-600 bg-transparent dark:text-white p-2 focus:outline-none focus:border-purple-500"
             />
-            <textarea value={content} onChange={e => setContent(e.target.value)} rows={4} className="w-full border p-3 rounded" placeholder="Content..."/>
+            <textarea value={content} onChange={e => setContent(e.target.value)} rows={4} className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-3 rounded" placeholder="Content..."/>
             
-            <div className="flex items-center gap-2 bg-purple-50 p-3 rounded">
+            <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/30 p-3 rounded">
                 <input 
                     type="checkbox" 
                     id="sendEmail" 
@@ -111,7 +108,7 @@ export const LeaderDashboard = () => {
                     onChange={e => setSendEmail(e.target.checked)}
                     className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                 />
-                <label htmlFor="sendEmail" className="text-sm text-gray-700 font-medium cursor-pointer">
+                <label htmlFor="sendEmail" className="text-sm text-gray-700 dark:text-gray-300 font-medium cursor-pointer">
                     Send Email Notification (Opens Mail App)
                 </label>
             </div>
@@ -124,15 +121,15 @@ export const LeaderDashboard = () => {
             </div>
         </div>
 
-        <h3 className="text-xl font-bold text-gray-700">History</h3>
-        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+        <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300">History</h3>
+        <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
             {announcements.map(a => (
-            <div key={a.id} className="bg-white p-4 rounded shadow-sm border-l-4 border-purple-500 group relative">
+            <div key={a.id} className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm border-l-4 border-purple-500 group relative">
                 <div className="flex justify-between items-baseline mb-1">
-                <h4 className="font-bold text-gray-800">{a.title}</h4>
-                <span className="text-xs text-gray-500">{a.date}</span>
+                <h4 className="font-bold text-gray-800 dark:text-gray-100">{a.title}</h4>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{a.date}</span>
                 </div>
-                <p className="text-sm text-gray-600 line-clamp-2">{a.content}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{a.content}</p>
                 <button 
                     onClick={() => handleDeleteAnnouncement(a.id)}
                     className="absolute top-2 right-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-opacity"
@@ -149,9 +146,9 @@ export const LeaderDashboard = () => {
       <div className="space-y-6">
           
           {/* Class Days Config */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-indigo-100">
-             <h2 className="text-xl font-bold text-indigo-700 mb-4">📅 Class Days Configuration</h2>
-             <p className="text-sm text-gray-500 mb-4">Select the days of the week when classes are held.</p>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-indigo-100 dark:border-indigo-900">
+             <h2 className="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-4">📅 Class Days Configuration</h2>
+             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Select the days of the week when classes are held.</p>
              <div className="flex flex-wrap gap-2">
                  {DAYS_OF_WEEK.map((day, index) => (
                      <button
@@ -160,7 +157,7 @@ export const LeaderDashboard = () => {
                         className={`px-4 py-2 rounded-full font-bold text-sm transition-all border ${
                             classDays.includes(index) 
                             ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
-                            : 'bg-white text-gray-400 border-gray-200 hover:border-indigo-300'
+                            : 'bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-indigo-300'
                         }`}
                      >
                          {day}
@@ -170,30 +167,30 @@ export const LeaderDashboard = () => {
           </div>
 
           {/* Holiday Management */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-red-100 h-fit">
-            <div className="border-b border-red-100 pb-4 mb-4">
-                <h2 className="text-2xl font-bold text-red-700">⛔ {t('manageHolidays')}</h2>
-                <p className="text-sm text-gray-500">Block specific dates (e.g. Holidays, Breaks).</p>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-red-100 dark:border-red-900 h-fit">
+            <div className="border-b border-red-100 dark:border-red-900 pb-4 mb-4">
+                <h2 className="text-2xl font-bold text-red-700 dark:text-red-400">⛔ {t('manageHolidays')}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Block specific dates (e.g. Holidays, Breaks).</p>
             </div>
             
             <div className="flex flex-col gap-3 mb-6">
                 <div className="flex gap-2">
                     <div className="flex-1">
-                        <label className="text-xs font-bold text-gray-500">Start Date</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Start Date</label>
                         <input 
                             type="date" 
                             value={holidayStartDate} 
                             onChange={e => setHolidayStartDate(e.target.value)} 
-                            className="border p-2 rounded w-full"
+                            className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-2 rounded w-full"
                         />
                     </div>
                     <div className="flex-1">
-                        <label className="text-xs font-bold text-gray-500">End Date (Optional)</label>
+                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400">End Date (Optional)</label>
                         <input 
                             type="date" 
                             value={holidayEndDate} 
                             onChange={e => setHolidayEndDate(e.target.value)} 
-                            className="border p-2 rounded w-full"
+                            className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-2 rounded w-full"
                         />
                     </div>
                 </div>
@@ -203,7 +200,7 @@ export const LeaderDashboard = () => {
                         placeholder="Reason (e.g. Christmas Break)" 
                         value={holidayReason} 
                         onChange={e => setHolidayReason(e.target.value)} 
-                        className="border p-2 rounded flex-1"
+                        className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-2 rounded flex-1"
                     />
                     <button 
                         onClick={handleAddHoliday}
@@ -214,17 +211,17 @@ export const LeaderDashboard = () => {
                 </div>
             </div>
 
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                 {holidays.length === 0 && <p className="text-gray-400 italic text-center">No blocked dates.</p>}
                 {holidays.map(h => (
-                    <div key={h.id} className="flex justify-between items-center bg-red-50 p-3 rounded border border-red-100">
+                    <div key={h.id} className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-100 dark:border-red-800">
                         <div>
-                            <span className="font-bold text-red-800 mr-3">{h.date}</span>
-                            <span className="text-red-600 text-sm">{h.reason}</span>
+                            <span className="font-bold text-red-800 dark:text-red-200 mr-3">{h.date}</span>
+                            <span className="text-red-600 dark:text-red-300 text-sm">{h.reason}</span>
                         </div>
                         <button 
                             onClick={() => handleDeleteHoliday(h.id)}
-                            className="text-red-400 hover:text-red-700"
+                            className="text-red-400 hover:text-red-700 dark:hover:text-red-200"
                         >
                             🗑️
                         </button>
