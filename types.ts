@@ -1,3 +1,4 @@
+
 export enum Role {
   STUDENT = 'STUDENT',
   TEACHER = 'TEACHER',
@@ -45,6 +46,12 @@ export interface Announcement {
   content: string;
   date: string;
   authorName: string;
+}
+
+export interface Holiday {
+  id: string;
+  date: string;
+  reason: string;
 }
 
 export type Language = 'it' | 'es' | 'en' | 'fr' | 'de';

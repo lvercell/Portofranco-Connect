@@ -1,16 +1,9 @@
 
-import { User, Booking, Announcement } from '../types';
+import { User, Booking, Announcement, Holiday } from '../types';
 import { supabase } from './supabaseClient';
 
-// Helper to check if Supabase is connected
-const isSupabaseConfigured = () => {
-    return !!supabase;
-};
-
-// Helper for generating fallback IDs for older browsers
-const generateId = () => {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2);
-};
+const isSupabaseConfigured = () => !!supabase;
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
 export const dataService = {
   
@@ -18,10 +11,6 @@ export const dataService = {
 
   createUser: async (user: User): Promise<User | null> => {
     if (!isSupabaseConfigured()) throw new Error("Supabase not connected");
-    
-    // We insert into the 'public.users' table. 
-    // The 'id' MUST match the auth.uid() from the registered user in AuthContext.
-    // upsert ensures that if the user double-clicks or refreshes, we don't crash
     const { data, error } = await supabase!
       .from('users')
       .upsert([{
@@ -34,7 +23,7 @@ export const dataService = {
           dob: user.dob,
           parent_name: user.parentName,
           parent_email: user.parentEmail,
-          status: 'PENDING' // Always start as PENDING
+          status: 'PENDING'
       }], { onConflict: 'id' })
       .select()
       .single();
@@ -50,9 +39,7 @@ export const dataService = {
       .select('*')
       .eq('id', id)
       .single();
-      
     if (error) return null;
-    // Map snake_case from DB to camelCase for app
     return {
         ...data,
         parentName: data.parent_name,
@@ -69,7 +56,6 @@ export const dataService = {
       .select('*')
       .ilike('email', email)
       .single();
-
     if (error) return null;
     return {
         ...data,
@@ -99,7 +85,6 @@ export const dataService = {
         .select('*')
         .eq('status', 'PENDING')
         .order('created_at', { ascending: false });
-
     return (data || []).map((u: any) => ({
         ...u,
         parentName: u.parent_name,
@@ -120,11 +105,10 @@ export const dataService = {
   },
 
   // --- AUTH UTILS ---
-
   sendPasswordReset: async (email: string) => {
     if (!isSupabaseConfigured()) return;
     const { error } = await supabase!.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin, // Redirects back to the app
+      redirectTo: window.location.origin,
     });
     if (error) throw error;
   },
@@ -136,12 +120,9 @@ export const dataService = {
   },
 
   // --- BOOKINGS ---
-
   getBookings: async (): Promise<Booking[]> => {
     if (!isSupabaseConfigured()) return [];
-    const { data, error } = await supabase!
-        .from('bookings')
-        .select('*');
+    const { data, error } = await supabase!.from('bookings').select('*');
     if (error) console.error(error);
     return (data || []).map((b: any) => ({
         ...b,
@@ -155,21 +136,14 @@ export const dataService = {
 
   createBooking: async (student: User, subjectId: string, date: string) => {
     if (!isSupabaseConfigured()) return;
-
-    // 1. Check constraints
     const { data: studentBookings } = await supabase!
         .from('bookings')
         .select('*')
         .eq('student_id', student.id)
         .eq('date', date);
     
-    if (studentBookings && studentBookings.length >= 2) {
-        throw new Error("MAX_SUBJECTS");
-    }
-
-    if (studentBookings?.find(b => b.subject_id === subjectId)) {
-        throw new Error("DUPLICATE_SUBJECT");
-    }
+    if (studentBookings && studentBookings.length >= 2) throw new Error("MAX_SUBJECTS");
+    if (studentBookings?.find(b => b.subject_id === subjectId)) throw new Error("DUPLICATE_SUBJECT");
 
     const { error } = await supabase!.from('bookings').insert([{
         student_id: student.id,
@@ -177,7 +151,6 @@ export const dataService = {
         subject_id: subjectId,
         date: date
     }]);
-
     if (error) throw error;
   },
 
@@ -188,14 +161,11 @@ export const dataService = {
 
   claimBooking: async (bookingId: string, teacher: User) => {
     if (!isSupabaseConfigured()) return;
-    
-    // Check if already claimed
     const { data: booking } = await supabase!
         .from('bookings')
         .select('teacher_id')
         .eq('id', bookingId)
         .single();
-        
     if (booking?.teacher_id) throw new Error("Already claimed");
 
     await supabase!.from('bookings').update({
@@ -218,18 +188,13 @@ export const dataService = {
   },
 
   // --- ANNOUNCEMENTS ---
-
   getAnnouncements: async (): Promise<Announcement[]> => {
     if (!isSupabaseConfigured()) return [];
     const { data } = await supabase!
         .from('announcements')
         .select('*')
         .order('created_at', { ascending: false });
-    
-    return (data || []).map((a: any) => ({
-        ...a,
-        authorName: a.author_name
-    }));
+    return (data || []).map((a: any) => ({ ...a, authorName: a.author_name }));
   },
 
   createAnnouncement: async (announcement: Announcement) => {
@@ -242,8 +207,24 @@ export const dataService = {
     }]);
   },
 
-  // --- SYSTEM SETTINGS ---
+  // --- HOLIDAYS ---
+  getHolidays: async (): Promise<Holiday[]> => {
+      if (!isSupabaseConfigured()) return [];
+      const { data } = await supabase!.from('holidays').select('*').order('date');
+      return data || [];
+  },
 
+  createHoliday: async (date: string, reason: string) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('holidays').insert([{ date, reason }]);
+  },
+
+  deleteHoliday: async (id: string) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('holidays').delete().eq('id', id);
+  },
+
+  // --- SYSTEM SETTINGS ---
   getSystemSettings: async (key: string): Promise<string | null> => {
       if (!isSupabaseConfigured()) return null;
       const { data } = await supabase!
@@ -256,19 +237,15 @@ export const dataService = {
 
   setSystemSettings: async (key: string, value: string) => {
       if (!isSupabaseConfigured()) return;
-      await supabase!
-        .from('system_settings')
-        .upsert([{ key, value }]);
+      await supabase!.from('system_settings').upsert([{ key, value }]);
   },
 
   // --- UTILS ---
-
   generateId,
-
   getAvailableDates: (): string[] => {
     const dates: string[] = [];
     const today = new Date();
-    for (let i = 1; i <= 15; i++) {
+    for (let i = 1; i <= 30; i++) { // Extended to 30 days
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const day = d.getDay();

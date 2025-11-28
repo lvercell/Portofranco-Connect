@@ -160,7 +160,9 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     setNewPassword: 'Imposta Nuova Password',
     passwordUpdated: 'Password aggiornata con successo!',
     enterNewPassword: 'Inserisci la nuova password',
-    updatePassword: 'Aggiorna Password'
+    updatePassword: 'Aggiorna Password',
+    manageHolidays: 'Gestione Festività',
+    addHoliday: 'Aggiungi Festività'
   },
   en: {
     welcome: 'After-School Portal',
@@ -232,7 +234,9 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     setNewPassword: 'Set New Password',
     passwordUpdated: 'Password updated successfully!',
     enterNewPassword: 'Enter new password',
-    updatePassword: 'Update Password'
+    updatePassword: 'Update Password',
+    manageHolidays: 'Holiday Management',
+    addHoliday: 'Add Holiday'
   },
   es: {
     welcome: 'Portal Doposcuola',
@@ -304,7 +308,9 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     setNewPassword: 'Crear Nueva Contraseña',
     passwordUpdated: '¡Contraseña actualizada con éxito!',
     enterNewPassword: 'Ingresa nueva contraseña',
-    updatePassword: 'Actualizar Contraseña'
+    updatePassword: 'Actualizar Contraseña',
+    manageHolidays: 'Gestión de Feriados',
+    addHoliday: 'Agregar Feriado'
   },
   fr: {
     welcome: 'Portail Doposcuola',
@@ -376,7 +382,9 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     setNewPassword: 'Nouveau mot de passe',
     passwordUpdated: 'Mot de passe mis à jour !',
     enterNewPassword: 'Entrez le nouveau mot de passe',
-    updatePassword: 'Mettre à jour'
+    updatePassword: 'Mettre à jour',
+    manageHolidays: 'Gestion des Vacances',
+    addHoliday: 'Ajouter Vacances'
   },
   de: {
     welcome: 'Doposcuola Portal',
@@ -448,6 +456,8 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     setNewPassword: 'Neues Passwort setzen',
     passwordUpdated: 'Passwort erfolgreich aktualisiert!',
     enterNewPassword: 'Neues Passwort eingeben',
-    updatePassword: 'Passwort aktualisieren'
+    updatePassword: 'Passwort aktualisieren',
+    manageHolidays: 'Feiertagsmanagement',
+    addHoliday: 'Feiertag hinzufügen'
   }
 };

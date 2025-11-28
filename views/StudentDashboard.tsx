@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { dataService } from '../services/dataService';
-import { Booking } from '../types';
+import { Booking, Holiday } from '../types';
 import { SUBJECTS_DATA } from '../constants';
 
 export const StudentDashboard = () => {
@@ -10,6 +11,7 @@ export const StudentDashboard = () => {
   const { t, language } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [message, setMessage] = useState('');
@@ -17,19 +19,17 @@ export const StudentDashboard = () => {
 
   const refreshData = async () => {
     if (!user) return;
-    const allBookings = await dataService.getBookings();
-    // Assuming backend data comes with snake_case keys mapped to interface, 
-    // or we might need to map them manually if Supabase returns exact columns.
-    // For this prototype we rely on JS implicit handling or manual mapping in service.
-    // However, dataService.getBookings() returns Booking[].
-    const myBookings = allBookings.filter(b => b.studentId === user.id); 
-    // Note: If using Supabase directly in service, we might need to adjust column mapping there.
-    // To be safe, dataService should map 'student_id' to 'studentId' if needed. 
-    // I will assume dataService mapping handles this or we use snake_case in Types in a real app.
-    // For now, I'll filter by both just in case.
-    const myBookingsRobust = allBookings.filter(b => b.studentId === user.id || (b as any).student_id === user.id);
-
-    setBookings(myBookingsRobust); 
+    
+    // Fetch parallel data
+    const [allBookings, hols] = await Promise.all([
+        dataService.getBookings(),
+        dataService.getHolidays()
+    ]);
+    
+    const myBookings = allBookings.filter(b => b.studentId === user.id || (b as any).student_id === user.id);
+    
+    setHolidays(hols);
+    setBookings(myBookings); 
     setAvailableDates(dataService.getAvailableDates());
   };
 
@@ -38,10 +38,12 @@ export const StudentDashboard = () => {
   }, [user]);
 
   useEffect(() => {
+    // Select first valid date that isn't a holiday
     if (availableDates.length > 0 && !selectedDate) {
-        setSelectedDate(availableDates[0]);
+        const validDate = availableDates.find(d => !holidays.find(h => h.date === d));
+        if (validDate) setSelectedDate(validDate);
     }
-  }, [availableDates]);
+  }, [availableDates, holidays]);
 
   const handleBooking = async () => {
     if (!user || !selectedDate || !selectedSubjectId) return;
@@ -86,17 +88,13 @@ export const StudentDashboard = () => {
   };
 
   const toggleSubject = (id: string) => {
-    if (selectedSubjectId === id) {
-      setSelectedSubjectId('');
-    } else {
-      setSelectedSubjectId(id);
-    }
+    if (selectedSubjectId === id) setSelectedSubjectId('');
+    else setSelectedSubjectId(id);
   };
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       
-      {/* Messages */}
       {(message || errorState) && (
         <div className={`p-4 rounded-lg shadow-md flex items-center justify-between ${errorState ? 'bg-red-50 text-red-800 border-l-4 border-red-500' : 'bg-green-50 text-green-800 border-l-4 border-green-500'}`}>
            <span className="font-medium">{errorState || message}</span>
@@ -115,25 +113,39 @@ export const StudentDashboard = () => {
                 {t('selectDate')}
              </h2>
              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-                {availableDates.map(date => (
-                    <button
-                        key={date}
-                        type="button"
-                        onClick={() => setSelectedDate(date)}
-                        className={`flex-shrink-0 px-6 py-3 rounded-lg border-2 transition-all duration-200 ${
-                            selectedDate === date 
-                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold shadow-md transform scale-105' 
-                            : 'border-gray-200 hover:border-indigo-300 text-gray-600 bg-gray-50'
-                        }`}
-                    >
-                        <span className="block text-xs uppercase tracking-wider opacity-70">
-                            {new Date(date).toLocaleDateString(language, { weekday: 'short' })}
-                        </span>
-                        <span className="block text-lg">
-                            {new Date(date).toLocaleDateString(language, { day: 'numeric', month: 'short' })}
-                        </span>
-                    </button>
-                ))}
+                {availableDates.map(date => {
+                    const holiday = holidays.find(h => h.date === date);
+                    const isHoliday = !!holiday;
+                    
+                    return (
+                        <div key={date} className="relative group">
+                            <button
+                                type="button"
+                                disabled={isHoliday}
+                                onClick={() => setSelectedDate(date)}
+                                className={`flex-shrink-0 px-6 py-3 rounded-lg border-2 transition-all duration-200 ${
+                                    isHoliday 
+                                    ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60' 
+                                    : selectedDate === date 
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold shadow-md transform scale-105' 
+                                        : 'border-gray-200 hover:border-indigo-300 text-gray-600 bg-gray-50'
+                                }`}
+                            >
+                                <span className="block text-xs uppercase tracking-wider opacity-70">
+                                    {new Date(date).toLocaleDateString(language, { weekday: 'short' })}
+                                </span>
+                                <span className="block text-lg">
+                                    {new Date(date).toLocaleDateString(language, { day: 'numeric', month: 'short' })}
+                                </span>
+                            </button>
+                            {isHoliday && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                    ⛔ {holiday.reason}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
              </div>
              <p className="text-xs text-indigo-500 font-medium mt-2 text-right">🕒 14:30 - 16:30</p>
           </div>
@@ -147,7 +159,6 @@ export const StudentDashboard = () => {
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {SUBJECTS_DATA.map(sub => {
-                    // Check logic needs to be robust for mapped/unmapped data
                     const existingBooking = bookings.find(b => b.date === selectedDate && (b.subjectId === sub.id || (b as any).subject_id === sub.id));
                     const isBooked = !!existingBooking;
 
@@ -169,7 +180,7 @@ export const StudentDashboard = () => {
                             </div>
                             
                             {selectedSubjectId === sub.id && !isBooked && (
-                                <div className="absolute top-2 right-2 text-orange-500 animate-bounce-short">
+                                <div className="absolute top-2 right-2 text-orange-500">
                                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                 </div>
                             )}
@@ -181,7 +192,7 @@ export const StudentDashboard = () => {
                                         className="bg-red-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow hover:bg-red-600 flex items-center gap-1 transition-transform transform hover:scale-105"
                                         title={t('cancelBooking')}
                                     >
-                                        🗑️ {t('cancelBooking')}
+                                        🗑️
                                     </button>
                                 </div>
                             )}
@@ -219,9 +230,7 @@ export const StudentDashboard = () => {
                 <div className="space-y-4">
                     {bookings.map(b => (
                         <div key={b.id} className="relative bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-all group pl-4 pr-14">
-                            
                             <div className={`absolute top-2 bottom-2 left-1 w-1 rounded-full ${b.teacherId || (b as any).teacher_id ? 'bg-green-500' : 'bg-yellow-400'}`}></div>
-
                             <div className="pl-2">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-xl">{getSubjectIcon(b.subjectId || (b as any).subject_id)}</span>
@@ -232,7 +241,6 @@ export const StudentDashboard = () => {
                                         {new Date(b.date).toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' })}
                                     </span>
                                 </div>
-                                
                                 <div className="mt-2">
                                      {b.teacherId || (b as any).teacher_id ? (
                                         <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
@@ -245,7 +253,6 @@ export const StudentDashboard = () => {
                                     )}
                                 </div>
                             </div>
-                            
                             <button 
                                 type="button"
                                 onClick={(e) => handleCancel(e, b.id)}
@@ -261,7 +268,6 @@ export const StudentDashboard = () => {
                 </div>
             )}
         </div>
-
       </div>
     </div>
   );
