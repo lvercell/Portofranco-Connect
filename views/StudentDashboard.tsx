@@ -97,7 +97,7 @@ export const StudentDashboard = () => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="space-y-6 animate-fade-in pb-12">
       
       {(message || errorState) && (
         <div className={`p-4 rounded-lg shadow-md flex items-center justify-between ${errorState ? 'bg-red-50 text-red-800 border-l-4 border-red-500' : 'bg-green-50 text-green-800 border-l-4 border-green-500'}`}>
@@ -105,7 +105,7 @@ export const StudentDashboard = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Column: Booking Logic */}
         <div className="lg:col-span-2 space-y-6">
@@ -155,13 +155,13 @@ export const StudentDashboard = () => {
           </div>
 
           {/* 2. Subject Selection */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col max-h-[700px]">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center shrink-0">
                 <span className="bg-orange-100 text-orange-700 p-2 rounded-lg mr-3">📚</span>
                 {t('selectSubjectTitle')}
              </h2>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-[200px]">
                 {subjects.map(sub => {
                     const existingBooking = bookings.find(b => b.date === selectedDate && (b.subjectId === sub.id || (b as any).subject_id === sub.id));
                     const isBooked = !!existingBooking;
@@ -170,7 +170,7 @@ export const StudentDashboard = () => {
                         <div
                             key={sub.id}
                             onClick={() => !isBooked && toggleSubject(sub.id)}
-                            className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 group select-none ${
+                            className={`relative p-3 rounded-xl border-2 text-left transition-all duration-200 group select-none h-28 flex flex-col justify-between ${
                                 isBooked 
                                 ? 'bg-gray-100 border-gray-200 cursor-default' 
                                 : selectedSubjectId === sub.id
@@ -178,17 +178,19 @@ export const StudentDashboard = () => {
                                     : 'border-gray-100 hover:border-orange-200 hover:shadow-sm bg-white cursor-pointer'
                             }`}
                         >
-                            <div className="text-3xl mb-3">{sub.icon}</div>
+                            <div className="flex justify-between items-start">
+                                <div className="text-2xl">{sub.icon}</div>
+                                {selectedSubjectId === sub.id && !isBooked && (
+                                    <div className="text-orange-500">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                                    </div>
+                                )}
+                            </div>
+                            
                             <div className={`font-semibold text-sm leading-tight ${selectedSubjectId === sub.id ? 'text-orange-900' : 'text-gray-700'}`}>
                                 {sub.translations[language] || sub.translations['en']}
                             </div>
                             
-                            {selectedSubjectId === sub.id && !isBooked && (
-                                <div className="absolute top-2 right-2 text-orange-500">
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                                </div>
-                            )}
-
                             {isBooked && existingBooking && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-xl">
                                     <button
@@ -205,12 +207,12 @@ export const StudentDashboard = () => {
                 })}
             </div>
 
-            <div className="mt-8">
+            <div className="mt-6 pt-4 border-t border-gray-100 shrink-0">
                 <button 
                     type="button"
                     onClick={handleBooking}
                     disabled={!selectedDate || !selectedSubjectId}
-                    className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+                    className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
                 >
                     {t('confirmBooking')}
                 </button>
@@ -219,8 +221,8 @@ export const StudentDashboard = () => {
         </div>
 
         {/* Right Column: My Bookings */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit sticky top-24">
-            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit sticky top-24 max-h-[80vh] overflow-y-auto custom-scrollbar">
+            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center sticky top-0 bg-white pb-2 z-10 border-b border-gray-50">
                 <span className="bg-green-100 text-green-700 p-2 rounded-lg mr-3">🎒</span>
                 {t('myClasses')}
             </h2>

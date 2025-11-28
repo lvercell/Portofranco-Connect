@@ -147,7 +147,7 @@ export const AdminDashboard = () => {
                 </div>
                 <span className="bg-orange-200 text-orange-800 px-3 py-1 rounded-full text-xs font-bold">{pendingUsers.length}</span>
              </div>
-             <div className="grid gap-4 max-h-60 overflow-y-auto">
+             <div className="grid gap-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
                  {pendingUsers.map(u => (
                      <div key={u.id} className="bg-white p-4 rounded-lg flex justify-between items-center shadow-sm">
                          <div>
@@ -166,21 +166,21 @@ export const AdminDashboard = () => {
       )}
 
       {/* Main Panel */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="flex border-b border-gray-200">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col max-h-[85vh]">
+          <div className="flex border-b border-gray-200 shrink-0">
               <TabButton id="USERS" label={t('manageUsers')} icon="👥" />
               <TabButton id="SUBJECTS" label={t('manageSubjects')} icon="📚" />
               <TabButton id="REPORTS" label={t('reportsAdvanced')} icon="📊" />
               <TabButton id="SETTINGS" label={t('settings')} icon="🎨" />
           </div>
 
-          <div className="p-6">
+          <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
               
               {/* --- USERS TAB --- */}
               {activeTab === 'USERS' && (
                  <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-gray-50 sticky top-0">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('name')}</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('role')}</th>
@@ -223,7 +223,7 @@ export const AdminDashboard = () => {
               {activeTab === 'SUBJECTS' && (
                   <div className="space-y-8">
                       {/* Add Form */}
-                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-wrap gap-4 items-end">
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-wrap gap-4 items-end sticky top-0 z-10">
                           <div className="flex-1 min-w-[150px]">
                               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">ID (e.g. math)</label>
                               <input type="text" value={newSubId} onChange={e => setNewSubId(e.target.value)} className="w-full border p-2 rounded text-sm" placeholder="unique_id" />
@@ -275,7 +275,7 @@ export const AdminDashboard = () => {
               {/* --- REPORTS TAB --- */}
               {activeTab === 'REPORTS' && (
                   <div className="space-y-6">
-                      <div className="flex flex-wrap gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div className="flex flex-wrap gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200 sticky top-0 z-10">
                           <div>
                               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Month</label>
                               <input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="border p-2 rounded text-sm" />

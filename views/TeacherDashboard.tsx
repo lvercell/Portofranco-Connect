@@ -78,13 +78,13 @@ export const TeacherDashboard = () => {
     <div className="space-y-6">
       
       {/* Date Navigation */}
-      <div className="flex justify-center mb-8">
-        <div className="bg-white p-2 rounded-full shadow-sm border inline-flex gap-2 flex-wrap justify-center">
+      <div className="flex justify-center mb-6">
+        <div className="bg-white p-2 rounded-full shadow-sm border inline-flex gap-2 flex-wrap justify-center max-w-full overflow-x-auto">
             {availableDates.map(date => (
             <button
                 key={date}
                 onClick={() => setActiveDate(date)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 activeDate === date 
                     ? 'bg-indigo-600 text-white shadow-md' 
                     : 'bg-transparent text-gray-500 hover:bg-gray-100'
@@ -96,18 +96,18 @@ export const TeacherDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         
         {/* Available Pool */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
-          <div className="bg-gray-50 p-4 border-b border-gray-100">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-fit">
+          <div className="bg-gray-50 p-4 border-b border-gray-100 shrink-0">
              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
                 {t('availableClasses')}
              </h2>
           </div>
           
-          <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto flex-1">
+          <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
             {unclaimed.length === 0 && (
                 <div className="text-center py-8 text-gray-400">
                     <p>{t('noClasses')}</p>
@@ -142,15 +142,15 @@ export const TeacherDashboard = () => {
         </div>
 
         {/* My Schedule */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
-            <div className="bg-indigo-50 p-4 border-b border-indigo-100">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-fit">
+            <div className="bg-indigo-50 p-4 border-b border-indigo-100 shrink-0">
              <h2 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
                 <span className="text-xl">👩‍🏫</span>
                 {t('myClasses')}
              </h2>
             </div>
             
-          <div className="p-4 space-y-4 flex-1">
+          <div className="p-4 space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
             {myClasses.length === 0 && (
                 <div className="text-center py-8 text-gray-400">
                     <p>{t('noClasses')}</p>
