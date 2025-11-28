@@ -13,16 +13,19 @@ export const TeacherDashboard = () => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteContent, setNoteContent] = useState('');
   const [subjects, setSubjects] = useState<SubjectDef[]>([]);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
 
   const refresh = async () => {
-    const dates = dataService.getAvailableDates();
-    if (!activeDate && dates.length > 0) setActiveDate(dates[0]);
-    
-    // Fetch bookings and subjects concurrently
-    const [data, subs] = await Promise.all([
+    // Fetch bookings, subjects, and config concurrently
+    const [data, subs, classDays] = await Promise.all([
         dataService.getBookings(),
-        dataService.getSubjects()
+        dataService.getSubjects(),
+        dataService.getClassDays()
     ]);
+    
+    const dates = dataService.getAvailableDates(classDays);
+    setAvailableDates(dates);
+    if (!activeDate && dates.length > 0) setActiveDate(dates[0]);
     
     setSubjects(subs);
     setAllBookings(data);
@@ -77,7 +80,7 @@ export const TeacherDashboard = () => {
       {/* Date Navigation */}
       <div className="flex justify-center mb-8">
         <div className="bg-white p-2 rounded-full shadow-sm border inline-flex gap-2 flex-wrap justify-center">
-            {dataService.getAvailableDates().map(date => (
+            {availableDates.map(date => (
             <button
                 key={date}
                 onClick={() => setActiveDate(date)}

@@ -220,7 +220,7 @@ export const dataService = {
     return (data || []).map((a: any) => ({ ...a, authorName: a.author_name }));
   },
 
-  createAnnouncement: async (announcement: Announcement) => {
+  createAnnouncement: async (announcement: Announcement, sendEmail: boolean = false) => {
     if (!isSupabaseConfigured()) return;
     await supabase!.from('announcements').insert([{
         title: announcement.title,
@@ -228,6 +228,12 @@ export const dataService = {
         author_name: announcement.authorName,
         created_at: new Date().toISOString()
     }]);
+
+    if (sendEmail) {
+        // Here you would trigger an Edge Function or call an external API to send emails.
+        // For MVP frontend-only: We can't safely send mass emails to all users from client.
+        console.log("Email notification flag set for:", announcement.title);
+    }
   },
 
   getHolidays: async (): Promise<Holiday[]> => {
@@ -239,6 +245,24 @@ export const dataService = {
   createHoliday: async (date: string, reason: string) => {
       if (!isSupabaseConfigured()) return;
       await supabase!.from('holidays').insert([{ date, reason }]);
+  },
+
+  createHolidayRange: async (startDate: string, endDate: string, reason: string) => {
+      if (!isSupabaseConfigured()) return;
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const holidays = [];
+
+      for(let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)){
+          holidays.push({
+              date: new Date(dt).toISOString().split('T')[0],
+              reason: reason
+          });
+      }
+      // Bulk insert
+      if(holidays.length > 0) {
+          await supabase!.from('holidays').insert(holidays);
+      }
   },
 
   deleteHoliday: async (id: string) => {
@@ -260,16 +284,36 @@ export const dataService = {
     if (error) throw error;
   },
 
+  // --- SYSTEM SETTINGS (Dynamic Configuration) ---
+  
+  getClassDays: async (): Promise<number[]> => {
+      if (!isSupabaseConfigured()) return [2, 4]; // Default Tue, Thu
+      const { data } = await supabase!.from('system_settings').select('value').eq('key', 'class_days').single();
+      if (data?.value) {
+          try { return JSON.parse(data.value); } catch(e) { return [2, 4]; }
+      }
+      return [2, 4];
+  },
+
+  setClassDays: async (days: number[]) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('system_settings').upsert({
+          key: 'class_days',
+          value: JSON.stringify(days)
+      });
+  },
+
   // --- UTILS ---
   generateId,
-  getAvailableDates: (): string[] => {
+  
+  getAvailableDates: (allowedDays: number[] = [2, 4]): string[] => {
     const dates: string[] = [];
     const today = new Date();
-    for (let i = 1; i <= 30; i++) { 
+    for (let i = 1; i <= 60; i++) { // Extend to 60 days lookahead
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const day = d.getDay();
-      if (day === 2 || day === 4) { // Tuesday (2) & Thursday (4)
+      if (allowedDays.includes(day)) { 
         dates.push(d.toISOString().split('T')[0]);
       }
     }

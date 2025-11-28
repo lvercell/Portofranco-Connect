@@ -21,10 +21,11 @@ export const StudentDashboard = () => {
     if (!user) return;
     
     // Fetch parallel data
-    const [allBookings, hols, subs] = await Promise.all([
+    const [allBookings, hols, subs, classDays] = await Promise.all([
         dataService.getBookings(),
         dataService.getHolidays(),
-        dataService.getSubjects()
+        dataService.getSubjects(),
+        dataService.getClassDays()
     ]);
     
     const myBookings = allBookings.filter(b => b.studentId === user.id || (b as any).student_id === user.id);
@@ -32,7 +33,9 @@ export const StudentDashboard = () => {
     setSubjects(subs);
     setHolidays(hols);
     setBookings(myBookings); 
-    setAvailableDates(dataService.getAvailableDates());
+    
+    // Generate dates based on configured days
+    setAvailableDates(dataService.getAvailableDates(classDays));
   };
 
   useEffect(() => {
