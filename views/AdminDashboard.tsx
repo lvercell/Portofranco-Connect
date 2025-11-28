@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { dataService } from '../services/dataService';
@@ -16,6 +17,7 @@ export const AdminDashboard = () => {
   const { t, language } = useLanguage();
   const { backgroundImage, setBackgroundImage } = useTheme();
   const [teachers, setTeachers] = useState<User[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reportDate, setReportDate] = useState<string>('');
   const [customBg, setCustomBg] = useState('');
@@ -24,8 +26,10 @@ export const AdminDashboard = () => {
     const allUsers = await dataService.getAllUsers();
     setTeachers(allUsers.filter(u => u.role === Role.TEACHER));
     
+    const pendings = await dataService.getPendingUsers();
+    setPendingUsers(pendings);
+
     const allBookings = await dataService.getBookings();
-     // Normalize Supabase data
     const normalizedBookings = allBookings.map((b: any) => ({
         ...b,
         studentId: b.student_id || b.studentId,
@@ -50,6 +54,11 @@ export const AdminDashboard = () => {
     refresh();
   };
 
+  const approveUser = async (userId: string) => {
+      await dataService.approveUser(userId);
+      refresh();
+  };
+
   const getSubjectName = (id: string) => {
       const s = SUBJECTS_DATA.find(sub => sub.id === id);
       return s ? s.translations[language] : id;
@@ -69,6 +78,33 @@ export const AdminDashboard = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-12">
       
+      {/* 0. Pending Requests Panel */}
+      {pendingUsers.length > 0 && (
+          <div className="bg-orange-50 p-6 rounded-xl shadow-sm border border-orange-200">
+             <div className="border-b border-orange-200 pb-4 mb-4">
+                <h2 className="text-xl font-bold text-orange-800">⏳ {t('pendingRequests')}</h2>
+                <p className="text-sm text-orange-700">Approve new user registrations.</p>
+             </div>
+             <div className="grid gap-4">
+                 {pendingUsers.map(u => (
+                     <div key={u.id} className="bg-white p-4 rounded-lg flex justify-between items-center shadow-sm">
+                         <div>
+                             <p className="font-bold text-gray-800">{u.name} <span className="text-xs text-gray-500 font-normal">({u.role})</span></p>
+                             <p className="text-sm text-gray-500">{u.email}</p>
+                             <p className="text-xs text-gray-400">DOB: {u.dob} (Age: {u.age})</p>
+                         </div>
+                         <button 
+                            onClick={() => approveUser(u.id)}
+                            className="bg-green-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-green-700 shadow-sm"
+                         >
+                             {t('approve')}
+                         </button>
+                     </div>
+                 ))}
+             </div>
+          </div>
+      )}
+
       {/* 1. Appearance Panel (New) */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <div className="border-b pb-4 mb-4">

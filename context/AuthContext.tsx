@@ -13,7 +13,7 @@ interface AuthContextType {
   logout: () => void;
   register: (user: User) => Promise<void>;
   loading: boolean;
-  isPasswordRecovery: boolean; // Flag to show reset password screen
+  isPasswordRecovery: boolean; 
   setIsPasswordRecovery: (val: boolean) => void;
 }
 
@@ -24,36 +24,22 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [emailForMfa, setEmailForMfa] = useState<string>('');
   const [loginStep, setLoginStep] = useState<'CREDENTIALS' | 'MFA'>('CREDENTIALS');
   const [loading, setLoading] = useState(true);
-  const [pendingRegisterUser, setPendingRegisterUser] = useState<User | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    // Check active session on load
-    const checkSession = async () => {
-      if (!supabase) {
-          setLoading(false);
-          return;
-      }
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        await loadProfile(session.user.id);
-      }
-      setLoading(false);
-    };
-    
-    checkSession();
-
     // Listen for Auth changes (Magic Links, Password Reset, etc)
     const { data: authListener } = supabase?.auth.onAuthStateChange(async (event, session) => {
         console.log("Supabase Auth Event:", event);
+        
         if (event === 'SIGNED_IN' && session?.user) {
-            await loadProfile(session.user.id);
+            await loadProfile(session.user.id, session.user.email);
         }
+        
         if (event === 'SIGNED_OUT') {
             setUser(null);
             setLoginStep('CREDENTIALS');
         }
+        
         if (event === 'PASSWORD_RECOVERY') {
             setIsPasswordRecovery(true);
         }
@@ -64,14 +50,39 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     };
   }, []);
 
-  const loadProfile = async (uid: string) => {
-     const profile = await dataService.getUserById(uid);
-     if (profile) {
-        if (profile.status === 'PENDING') {
-            await supabase?.auth.signOut();
-            throw new Error("ACCOUNT_PENDING");
-        }
-        setUser(profile);
+  const loadProfile = async (uid: string, email?: string) => {
+     try {
+         // 1. Try to get existing profile
+         let profile = await dataService.getUserById(uid);
+
+         // 2. If no profile exists, check if we have pending registration data in LocalStorage
+         // This handles the "Magic Link clicked in new tab" scenario
+         if (!profile) {
+             const pendingData = localStorage.getItem('pending_register_user');
+             if (pendingData) {
+                 const userData = JSON.parse(pendingData);
+                 // Security check: ensure email matches
+                 if (userData.email.toLowerCase() === email?.toLowerCase()) {
+                     profile = await dataService.createUser({ ...userData, id: uid });
+                     localStorage.removeItem('pending_register_user'); // cleanup
+                 }
+             }
+         }
+
+         if (profile) {
+            // 3. Security Check: Is Account Approved?
+            if (profile.status === 'PENDING') {
+                await supabase?.auth.signOut();
+                alert("Account created but pending approval by Administrator.");
+                setUser(null);
+                return;
+            }
+            setUser(profile);
+         }
+     } catch (e) {
+         console.error("Error loading profile:", e);
+     } finally {
+         setLoading(false);
      }
   };
 
@@ -103,26 +114,26 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     });
 
     if (error) throw error;
-    if (data.session?.user) {
-        // If this was a registration flow, create the profile now
-        if (pendingRegisterUser) {
-            const newUserProfile = { ...pendingRegisterUser, id: data.session.user.id };
-            await dataService.createUser(newUserProfile);
-            setUser(newUserProfile);
-            setPendingRegisterUser(null);
-        } 
-        setLoginStep('CREDENTIALS');
-    }
+    // session is created, onAuthStateChange will trigger loadProfile
   };
 
   const register = async (newUser: User) => {
     if (!supabase) throw new Error("Supabase not configured");
     
+    // SAVE TO LOCAL STORAGE to persist across tabs if they click Magic Link
+    localStorage.setItem('pending_register_user', JSON.stringify(newUser));
+
     // We start the auth flow. When they verify OTP, we create the DB record.
-    const { error } = await supabase.auth.signInWithOtp({ email: newUser.email });
+    const { error } = await supabase.auth.signInWithOtp({ 
+        email: newUser.email,
+        options: {
+            // Force redirection to current URL to trigger detection
+            emailRedirectTo: window.location.href 
+        }
+    });
+    
     if (error) throw error;
 
-    setPendingRegisterUser(newUser);
     setEmailForMfa(newUser.email);
     setLoginStep('MFA');
   };

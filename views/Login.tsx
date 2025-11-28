@@ -103,8 +103,8 @@ export const Login = () => {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.message === "ACCOUNT_PENDING") {
-          setError(t('pendingApproval'));
+      if (err.message && err.message.includes("Invalid login credentials")) {
+          setError(loginMethod === 'PASSWORD' ? "Invalid credentials. If you signed up with Email/OTP, use that method first." : "Invalid credentials.");
       } else if (err.message && err.message.includes("Error sending magic link")) {
          setError("Error sending email. Rate limit exceeded or SMTP error.");
       } else {
@@ -141,7 +141,7 @@ export const Login = () => {
       return;
     }
 
-    // ID is assigned by Supabase Auth on verification
+    // ID is assigned by Supabase Auth on verification, we create a placeholder obj
     const newUser: User = {
       id: '', 
       name,
@@ -177,7 +177,7 @@ export const Login = () => {
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
             <h2 className="text-2xl font-bold text-gray-800">{t('verify')}</h2>
-            <p className="text-sm text-gray-500 mt-2">Check your email ({email}) for the code.</p>
+            <p className="text-sm text-gray-500 mt-2">Check your email ({email}) for the code or click the link.</p>
           </div>
           
           {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-center text-sm font-medium">{error}</div>}
@@ -191,7 +191,7 @@ export const Login = () => {
                 className="w-full text-center text-2xl tracking-widest border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all"
                 placeholder="• • • • • •"
                 maxLength={6}
-                required
+                // Removed required to allow link-only flow conceptually, but keeps UX standard
               />
             </div>
             <button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50">
@@ -288,7 +288,7 @@ export const Login = () => {
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
           </div>
 
-          {/* Password Input - Only if LoginMethod is Password AND not registering (Registration uses OTP verify to create account) */}
+          {/* Password Input - Only if LoginMethod is Password AND not registering */}
           {!isRegistering && loginMethod === 'PASSWORD' && (
               <div>
                  <div className="flex justify-between items-center mb-1">

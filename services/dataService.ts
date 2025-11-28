@@ -21,9 +21,10 @@ export const dataService = {
     
     // We insert into the 'public.users' table. 
     // The 'id' MUST match the auth.uid() from the registered user in AuthContext.
+    // upsert ensures that if the user double-clicks or refreshes, we don't crash
     const { data, error } = await supabase!
       .from('users')
-      .insert([{
+      .upsert([{
           id: user.id,
           email: user.email,
           name: user.name,
@@ -33,8 +34,8 @@ export const dataService = {
           dob: user.dob,
           parent_name: user.parentName,
           parent_email: user.parentEmail,
-          status: 'PENDING'
-      }])
+          status: 'PENDING' // Always start as PENDING
+      }], { onConflict: 'id' })
       .select()
       .single();
 
@@ -81,7 +82,24 @@ export const dataService = {
 
   getAllUsers: async (): Promise<User[]> => {
     if (!isSupabaseConfigured()) return [];
-    const { data } = await supabase!.from('users').select('*');
+    const { data } = await supabase!.from('users').select('*').order('name');
+    return (data || []).map((u: any) => ({
+        ...u,
+        parentName: u.parent_name,
+        parentEmail: u.parent_email,
+        isAdmin: u.is_admin,
+        isLeader: u.is_leader
+    }));
+  },
+
+  getPendingUsers: async (): Promise<User[]> => {
+    if (!isSupabaseConfigured()) return [];
+    const { data } = await supabase!
+        .from('users')
+        .select('*')
+        .eq('status', 'PENDING')
+        .order('created_at', { ascending: false });
+
     return (data || []).map((u: any) => ({
         ...u,
         parentName: u.parent_name,
@@ -106,7 +124,7 @@ export const dataService = {
   sendPasswordReset: async (email: string) => {
     if (!isSupabaseConfigured()) return;
     const { error } = await supabase!.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin, // Redirects back to the app with #access_token=...
+      redirectTo: window.location.origin, // Redirects back to the app
     });
     if (error) throw error;
   },
