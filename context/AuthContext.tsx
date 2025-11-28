@@ -37,10 +37,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         }
 
         try {
-            // 1. Check active session immediately on mount
+            // 1. Check active session immediately
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
-                await loadProfile(session.user.id, session.user.email);
+                await loadProfile(session.user);
             } else {
                 setLoading(false);
             }
@@ -49,14 +49,11 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             setLoading(false);
         }
 
-        // 2. Listen for future changes
+        // 2. Listen for auth changes
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            // console.log("Supabase Auth Event:", event);
-            
             if (event === 'SIGNED_IN' && session?.user) {
-                // Avoid reloading if we already have the user
                 if (!user || user.id !== session.user.id) {
-                     await loadProfile(session.user.id, session.user.email);
+                     await loadProfile(session.user);
                 }
             }
             
@@ -77,30 +74,41 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     };
 
     initAuth();
-  }, []); // Run once on mount
+  }, []);
 
-  const loadProfile = async (uid: string, email?: string) => {
+  const loadProfile = async (sessionUser: any) => {
      try {
-         // 1. Try to get existing profile
+         const uid = sessionUser.id;
+         const email = sessionUser.email;
+
+         // 1. Try to get existing profile from public table
          let profile = await dataService.getUserById(uid);
 
-         // 2. If no profile exists, check LocalStorage for pending registration
-         if (!profile) {
-             const pendingData = localStorage.getItem('pending_register_user');
-             if (pendingData) {
-                 const userData = JSON.parse(pendingData);
-                 if (userData.email.toLowerCase() === email?.toLowerCase()) {
-                     profile = await dataService.createUser({ ...userData, id: uid });
-                     localStorage.removeItem('pending_register_user');
-                 }
-             }
+         // 2. If NO public profile, but we have METADATA (from registration), create it now.
+         // This fixes the "Magic Link does nothing" bug.
+         if (!profile && sessionUser.user_metadata?.full_name) {
+             const meta = sessionUser.user_metadata;
+             const newUser: User = {
+                 id: uid,
+                 email: email,
+                 name: meta.full_name,
+                 phone: meta.phone || '',
+                 role: meta.role || Role.STUDENT,
+                 age: meta.age || 0,
+                 dob: meta.dob,
+                 parentName: meta.parent_name,
+                 parentEmail: meta.parent_email,
+                 status: 'PENDING'
+             };
+             // Create profile in public table
+             profile = await dataService.createUser(newUser);
          }
 
          if (profile) {
             // 3. Check Approval Status
             if (profile.status === 'PENDING') {
                 await supabase?.auth.signOut();
-                alert("Account created but pending approval by Administrator.");
+                alert("Account created! Waiting for Administrator approval.");
                 setUser(null);
             } else {
                 setUser(profile);
@@ -115,24 +123,29 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const login = async (email: string) => {
     if (!supabase) throw new Error("Supabase not configured");
+    const cleanEmail = email.trim().toLowerCase();
+    
     const { error } = await supabase.auth.signInWithOtp({ 
-        email,
-        options: { shouldCreateUser: false } // Only allow login if user exists (handled by UI usually, but good practice)
+        email: cleanEmail,
+        options: { shouldCreateUser: false } 
     });
+    
     if (error) throw error;
-    setEmailForMfa(email);
+    setEmailForMfa(cleanEmail);
     setLoginStep('MFA');
   };
 
   const loginWithPassword = async (email: string, password: string) => {
       if (!supabase) throw new Error("Supabase not configured");
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const cleanEmail = email.trim().toLowerCase();
+      const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
       if (error) throw error;
       setLoading(true); 
   };
 
   const verifyMfa = async (code: string) => {
     if (!supabase) return;
+    // 'email' type covers both magic link token and numeric OTP in most Supabase configs
     const { error } = await supabase.auth.verifyOtp({
         email: emailForMfa,
         token: code,
@@ -150,13 +163,26 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const register = async (newUser: User) => {
     if (!supabase) throw new Error("Supabase not configured");
-    localStorage.setItem('pending_register_user', JSON.stringify(newUser));
+    const cleanEmail = newUser.email.trim().toLowerCase();
+
+    // Store essential data in Auth Metadata so it survives the Magic Link redirect
     const { error } = await supabase.auth.signInWithOtp({ 
-        email: newUser.email,
-        options: { emailRedirectTo: window.location.href }
+        email: cleanEmail,
+        options: { 
+            emailRedirectTo: window.location.href,
+            data: {
+                full_name: newUser.name,
+                phone: newUser.phone,
+                role: newUser.role,
+                dob: newUser.dob,
+                age: newUser.age,
+                parent_name: newUser.parentName,
+                parent_email: newUser.parentEmail
+            }
+        }
     });
     if (error) throw error;
-    setEmailForMfa(newUser.email);
+    setEmailForMfa(cleanEmail);
     setLoginStep('MFA');
   };
 

@@ -12,7 +12,7 @@ export const Login = () => {
   
   // Login Method Toggle
   const [loginMethod, setLoginMethod] = useState<'OTP' | 'PASSWORD'>('OTP');
-  const [isRecovering, setIsRecovering] = useState(false); // Forgot password view
+  const [isRecovering, setIsRecovering] = useState(false); 
 
   // Form State
   const [email, setEmail] = useState('');
@@ -49,7 +49,6 @@ export const Login = () => {
     }
   }, [dob]);
 
-  // Timer logic for OTP
   useEffect(() => {
       let interval: ReturnType<typeof setInterval>;
       if (loginStep === 'MFA' && timeLeft > 0) {
@@ -60,17 +59,15 @@ export const Login = () => {
       return () => clearInterval(interval);
   }, [loginStep, timeLeft]);
 
-  // Reset timer when entering MFA step
   useEffect(() => {
       if (loginStep === 'MFA') {
-          // 60s, then 90s, then 120s...
           setTimeLeft(60 + (resendCount * 30));
       }
   }, [loginStep, resendCount]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
-  // --- PASSWORD RECOVERY FLOW (Step 2: Set New Password) ---
+  // --- PASSWORD RECOVERY FLOW (Set New Password) ---
   if (isPasswordRecovery) {
       const handleUpdatePassword = async (e: React.FormEvent) => {
           e.preventDefault();
@@ -147,12 +144,10 @@ export const Login = () => {
           await resendOtp();
           setResendCount(prev => prev + 1);
           setSuccessMsg("Code resent! Check your email.");
-          // Timer will update via useEffect based on resendCount
       } catch (err: any) {
           setError(err.message || "Failed to resend.");
       } finally {
           setIsSubmitting(false);
-          // Clear success message after 3s
           setTimeout(() => setSuccessMsg(''), 3000);
       }
   };
@@ -183,11 +178,11 @@ export const Login = () => {
       return;
     }
 
-    // ID is assigned by Supabase Auth on verification, we create a placeholder obj
+    // Prepare User Object - ID will be filled by AuthContext on success
     const newUser: User = {
       id: '', 
       name,
-      email,
+      email: email.trim().toLowerCase(),
       phone,
       age,
       dob,
@@ -278,10 +273,8 @@ export const Login = () => {
             <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100">
                 <h2 className="text-2xl font-bold text-center mb-2">{t('recoverPassword')}</h2>
                 <p className="text-center text-gray-500 text-sm mb-6">Enter your email to receive a reset link.</p>
-                
                 {successMsg && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">{successMsg}</div>}
                 {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4">{error}</div>}
-
                 <form onSubmit={handleRecoverPassword} className="space-y-4">
                     <div>
                         <label className="block text-xs font-bold text-gray-600 uppercase mb-1">{t('email')}</label>
@@ -304,14 +297,12 @@ export const Login = () => {
     <div className="min-h-[80vh] flex items-center justify-center py-12">
       <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100 relative overflow-hidden">
         
-        {/* Decor Header */}
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
 
         <h2 className="text-3xl font-black mb-6 text-center text-gray-800 tracking-tight">
           {isRegistering ? t('register') : t('login')}
         </h2>
         
-        {/* Login Method Toggle (Only when not registering) */}
         {!isRegistering && (
             <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
                 <button 
@@ -356,7 +347,6 @@ export const Login = () => {
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border-gray-200 border p-2 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" required />
           </div>
 
-          {/* Password Input - Only if LoginMethod is Password AND not registering */}
           {!isRegistering && loginMethod === 'PASSWORD' && (
               <div>
                  <div className="flex justify-between items-center mb-1">
@@ -407,7 +397,7 @@ export const Login = () => {
                 setIsRegistering(!isRegistering);
                 setError('');
                 setEmail('');
-                setLoginMethod('OTP'); // Reset to default
+                setLoginMethod('OTP'); 
             }}
             className="text-sm text-indigo-600 font-semibold hover:underline"
           >

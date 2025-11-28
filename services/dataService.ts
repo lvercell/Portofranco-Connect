@@ -11,6 +11,8 @@ export const dataService = {
 
   createUser: async (user: User): Promise<User | null> => {
     if (!isSupabaseConfigured()) throw new Error("Supabase not connected");
+    
+    // Using upsert and ignoring duplicate key error by selecting the row
     const { data, error } = await supabase!
       .from('users')
       .upsert([{
@@ -24,11 +26,18 @@ export const dataService = {
           parent_name: user.parentName,
           parent_email: user.parentEmail,
           status: 'PENDING'
-      }], { onConflict: 'id' })
+      }], { onConflict: 'id', ignoreDuplicates: false })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+         // If it's a primary key violation, likely the user clicked twice or race condition. 
+         // Just fetch and return existing.
+         if (error.code === '23505') {
+             return dataService.getUserById(user.id);
+         }
+         throw error;
+    }
     return data;
   },
 
@@ -108,7 +117,7 @@ export const dataService = {
   sendPasswordReset: async (email: string) => {
     if (!isSupabaseConfigured()) return;
     const { error } = await supabase!.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: window.location.href, // Using href instead of origin for cleaner handling
     });
     if (error) throw error;
   },
@@ -245,7 +254,7 @@ export const dataService = {
   getAvailableDates: (): string[] => {
     const dates: string[] = [];
     const today = new Date();
-    for (let i = 1; i <= 30; i++) { // Extended to 30 days
+    for (let i = 1; i <= 30; i++) { 
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const day = d.getDay();
