@@ -315,6 +315,20 @@ export const dataService = {
       });
   },
 
+  getWallpaper: async (): Promise<string | null> => {
+      if (!isSupabaseConfigured()) return null;
+      const { data } = await supabase!.from('system_settings').select('value').eq('key', 'app_bg').single();
+      return data?.value || null;
+  },
+
+  saveWallpaper: async (url: string) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('system_settings').upsert({
+          key: 'app_bg',
+          value: url
+      });
+  },
+
   // --- SECURITY (ACCESS CODE) ---
   verifyAccessCode: async (inputCode: string): Promise<boolean> => {
       if (!isSupabaseConfigured()) return true; // Fail open in local mode if DB issue

@@ -1,4 +1,7 @@
+
+
 import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from 'react';
+import { dataService } from '../services/dataService';
 
 interface ThemeContextType {
   backgroundImage: string;
@@ -16,32 +19,42 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
-    try {
-      // Load BG
-      const storedBg = localStorage.getItem('app_bg');
-      if (storedBg) setBackgroundImage(storedBg);
+    const initTheme = async () => {
+        try {
+            // 1. Try to fetch Global Wallpaper from DB
+            const dbBg = await dataService.getWallpaper();
+            if (dbBg) {
+                setBackgroundImage(dbBg);
+                localStorage.setItem('app_bg', dbBg); // Sync local for faster load next time
+            } else {
+                // Fallback to local
+                const storedBg = localStorage.getItem('app_bg');
+                if (storedBg) setBackgroundImage(storedBg);
+            }
 
-      // Load Dark Mode
-      const storedDark = localStorage.getItem('app_dark_mode');
-      if (storedDark) {
-        setIsDarkMode(JSON.parse(storedDark));
-      } else {
-        // System preference detection
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-           setIsDarkMode(true);
+            // 2. Load Dark Mode (Local Preference only)
+            const storedDark = localStorage.getItem('app_dark_mode');
+            if (storedDark) {
+                setIsDarkMode(JSON.parse(storedDark));
+            } else {
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                setIsDarkMode(true);
+                }
+            }
+        } catch (e) {
+            console.warn('Theme init error', e);
         }
-      }
-    } catch (e) {
-      console.warn('Theme: LocalStorage access denied.');
-    }
+    };
+    initTheme();
   }, []);
 
-  const handleSetBackground = (url: string) => {
+  const handleSetBackground = async (url: string) => {
     setBackgroundImage(url);
     try {
-      localStorage.setItem('app_bg', url);
+      localStorage.setItem('app_bg', url); // Optimistic local update
+      await dataService.saveWallpaper(url); // Global DB update
     } catch (e) {
-      console.warn('Theme: Could not save background.');
+      console.warn('Theme: Could not save background globally.');
     }
   };
 
