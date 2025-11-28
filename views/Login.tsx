@@ -65,7 +65,15 @@ export const Login = () => {
       }
   }, [loginStep, resendCount]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center">{t('loading')}</div>;
+
+  // Helper to map error messages to translations
+  const getErrorMessage = (msg: string) => {
+     if (msg.includes("Invalid login credentials") || msg.includes("Invalid credentials")) return t('errInvalidCreds');
+     if (msg.includes("Error sending magic link")) return t('errRateLimit');
+     if (msg.includes("Token has expired")) return t('errCodeExpired');
+     return msg || "Error";
+  };
 
   // --- PASSWORD RECOVERY FLOW (Set New Password) ---
   if (isPasswordRecovery) {
@@ -81,7 +89,7 @@ export const Login = () => {
                   setLoginMethod('PASSWORD');
               }, 2000);
           } catch (err: any) {
-              setError(err.message);
+              setError(getErrorMessage(err.message));
           } finally {
               setIsSubmitting(false);
           }
@@ -123,15 +131,7 @@ export const Login = () => {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.message && err.message.includes("Invalid login credentials")) {
-          setError(loginMethod === 'PASSWORD' ? "Invalid credentials. If you signed up with Email/OTP, use that method first." : "Invalid credentials.");
-      } else if (err.message && err.message.includes("Error sending magic link")) {
-         setError("Error sending email. Rate limit exceeded or SMTP error.");
-      } else if (err.message && err.message.includes("Token has expired")) {
-         setError("Code expired or invalid. Please request a new one.");
-      } else {
-         setError(err.message || "An error occurred");
-      }
+      setError(getErrorMessage(err.message));
       setIsSubmitting(false); // Make sure to stop submitting state on error
     }
     // Do not set submitting false on success, wait for AuthContext reload
@@ -143,9 +143,9 @@ export const Login = () => {
       try {
           await resendOtp();
           setResendCount(prev => prev + 1);
-          setSuccessMsg("Code resent! Check your email.");
+          setSuccessMsg(t('errorResent'));
       } catch (err: any) {
-          setError(err.message || "Failed to resend.");
+          setError(getErrorMessage(err.message));
       } finally {
           setIsSubmitting(false);
           setTimeout(() => setSuccessMsg(''), 3000);
@@ -159,9 +159,9 @@ export const Login = () => {
       setSuccessMsg('');
       try {
           await dataService.sendPasswordReset(email);
-          setSuccessMsg("Link sent! Check your email.");
+          setSuccessMsg(t('errorLinkSent'));
       } catch (err: any) {
-          setError(err.message || "Failed to send link");
+          setError(getErrorMessage(err.message));
       } finally {
           setIsSubmitting(false);
       }
@@ -173,7 +173,7 @@ export const Login = () => {
     setIsSubmitting(true);
     
     if (age < 16 && (!parentName || !parentEmail)) {
-      setError("Parent details required for minors.");
+      setError(t('errParentRequired'));
       setIsSubmitting(false);
       return;
     }
@@ -197,9 +197,9 @@ export const Login = () => {
     } catch (err: any) {
       console.error(err);
       if (err.message && err.message.includes("Error sending magic link")) {
-         setError("Error sending email. Rate limit exceeded.");
+         setError(t('errRateLimit'));
       } else {
-         setError(err.message || "Registration failed.");
+         setError(getErrorMessage(err.message));
       }
       setIsSubmitting(false);
     } 
@@ -213,7 +213,7 @@ export const Login = () => {
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
             <h2 className="text-2xl font-bold text-gray-800">{t('verify')}</h2>
-            <p className="text-sm text-gray-500 mt-2">Check your email <b>{email}</b> for the code.</p>
+            <p className="text-sm text-gray-500 mt-2">{t('checkEmail')} <b>{email}</b></p>
           </div>
           
           {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-center text-sm font-medium border border-red-100">{error}</div>}
@@ -238,14 +238,14 @@ export const Login = () => {
 
           <div className="mt-6 flex flex-col gap-3 text-center">
               {timeLeft > 0 ? (
-                  <p className="text-sm text-gray-400">Resend code in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+                  <p className="text-sm text-gray-400">{t('resendCodeIn')} {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
               ) : (
                   <button 
                     onClick={handleResend}
                     disabled={isSubmitting}
                     className="text-indigo-600 font-bold text-sm hover:underline"
                   >
-                      Resend Code
+                      {t('resendCodeBtn')}
                   </button>
               )}
 
@@ -257,7 +257,7 @@ export const Login = () => {
                 }}
                 className="text-gray-400 text-sm hover:text-gray-600"
               >
-                  &larr; Change Email / Back
+                  &larr; {t('changeEmail')}
               </button>
           </div>
         </div>
@@ -271,7 +271,7 @@ export const Login = () => {
         <div className="min-h-[80vh] flex items-center justify-center">
             <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-10 border border-gray-100">
                 <h2 className="text-2xl font-bold text-center mb-2">{t('recoverPassword')}</h2>
-                <p className="text-center text-gray-500 text-sm mb-6">Enter your email to receive a reset link.</p>
+                <p className="text-center text-gray-500 text-sm mb-6">{t('enterEmailRecovery')}</p>
                 {successMsg && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">{successMsg}</div>}
                 {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4">{error}</div>}
                 <form onSubmit={handleRecoverPassword} className="space-y-4">
@@ -370,7 +370,7 @@ export const Login = () => {
                </div>
                
                {age > 0 && (
-                  <div className="text-xs text-gray-500 text-right">Age: {age}</div>
+                  <div className="text-xs text-gray-500 text-right">{t('age')}: {age}</div>
                )}
 
               {age < 16 && age > 0 && (
@@ -386,7 +386,7 @@ export const Login = () => {
           )}
 
           <button type="submit" disabled={isSubmitting} className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-black transition shadow-lg mt-4 disabled:opacity-50">
-            {isSubmitting ? t('loading') : (isRegistering ? t('registerButton') : "Enter")}
+            {isSubmitting ? t('loading') : (isRegistering ? t('registerButton') : t('loginButton'))}
           </button>
         </form>
 

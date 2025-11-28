@@ -100,7 +100,20 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     reportsAdvanced: 'Report Avanzati',
     filterByTeacher: 'Filtra per Docente',
     filterBySubject: 'Filtra per Materia',
-    showAbsencesOnly: 'Mostra solo Assenze'
+    showAbsencesOnly: 'Mostra solo Assenze',
+    devMode: '🚧 App in fase di sviluppo (Beta)',
+    checkEmail: 'Controlla la tua email',
+    resendCodeIn: 'Invia di nuovo tra',
+    resendCodeBtn: 'Invia nuovo codice',
+    changeEmail: 'Cambia Email / Indietro',
+    errorLinkSent: 'Link inviato! Controlla la tua email.',
+    errorResent: 'Codice rinviato! Controlla la tua email.',
+    errInvalidCreds: 'Credenziali non valide.',
+    errRateLimit: 'Troppi tentativi. Riprova più tardi.',
+    errCodeExpired: 'Codice scaduto o non valido.',
+    errParentRequired: 'Dettagli genitore richiesti.',
+    errRegistrationFailed: 'Registrazione fallita.',
+    enterEmailRecovery: 'Inserisci la tua email per ricevere il link.'
   },
   en: {
     welcome: 'After-School Portal',
@@ -193,7 +206,20 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     reportsAdvanced: 'Advanced Reports',
     filterByTeacher: 'Filter by Teacher',
     filterBySubject: 'Filter by Subject',
-    showAbsencesOnly: 'Show Absences Only'
+    showAbsencesOnly: 'Show Absences Only',
+    devMode: '🚧 App in Development (Beta)',
+    checkEmail: 'Check your email',
+    resendCodeIn: 'Resend code in',
+    resendCodeBtn: 'Resend Code',
+    changeEmail: 'Change Email / Back',
+    errorLinkSent: 'Link sent! Check your email.',
+    errorResent: 'Code resent! Check your email.',
+    errInvalidCreds: 'Invalid credentials.',
+    errRateLimit: 'Rate limit exceeded. Try again later.',
+    errCodeExpired: 'Code expired or invalid.',
+    errParentRequired: 'Parent details required.',
+    errRegistrationFailed: 'Registration failed.',
+    enterEmailRecovery: 'Enter your email to receive a reset link.'
   },
   es: {
     welcome: 'Portal Doposcuola',
@@ -286,7 +312,20 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     reportsAdvanced: 'Reportes Avanzados',
     filterByTeacher: 'Filtrar por Docente',
     filterBySubject: 'Filtrar por Materia',
-    showAbsencesOnly: 'Solo Ausencias'
+    showAbsencesOnly: 'Solo Ausencias',
+    devMode: '🚧 App en Desarrollo (Beta)',
+    checkEmail: 'Revisa tu email',
+    resendCodeIn: 'Reenviar en',
+    resendCodeBtn: 'Reenviar Código',
+    changeEmail: 'Cambiar Email / Volver',
+    errorLinkSent: '¡Enlace enviado! Revisa tu email.',
+    errorResent: '¡Código reenviado! Revisa tu email.',
+    errInvalidCreds: 'Credenciales inválidas.',
+    errRateLimit: 'Límite excedido. Intenta más tarde.',
+    errCodeExpired: 'Código expirado o inválido.',
+    errParentRequired: 'Datos del tutor requeridos.',
+    errRegistrationFailed: 'Fallo en registro.',
+    enterEmailRecovery: 'Ingresa tu email para recibir el enlace.'
   },
   fr: {
     welcome: 'Portail Doposcuola',
@@ -379,7 +418,20 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     reportsAdvanced: 'Rapports Avancés',
     filterByTeacher: 'Filtrer par Enseignant',
     filterBySubject: 'Filtrer par Matière',
-    showAbsencesOnly: 'Voir Absences'
+    showAbsencesOnly: 'Voir Absences',
+    devMode: '🚧 Application en développement (Bêta)',
+    checkEmail: 'Vérifiez votre email',
+    resendCodeIn: 'Renvoyer dans',
+    resendCodeBtn: 'Renvoyer le code',
+    changeEmail: 'Changer Email / Retour',
+    errorLinkSent: 'Lien envoyé ! Vérifiez votre email.',
+    errorResent: 'Code renvoyé ! Vérifiez votre email.',
+    errInvalidCreds: 'Identifiants invalides.',
+    errRateLimit: 'Limite dépassée. Réessayez plus tard.',
+    errCodeExpired: 'Code expiré ou invalide.',
+    errParentRequired: 'Détails du parent requis.',
+    errRegistrationFailed: 'Échec de l\'inscription.',
+    enterEmailRecovery: 'Entrez votre email pour recevoir le lien.'
   },
   de: {
     welcome: 'Doposcuola Portal',
@@ -472,6 +524,19 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     reportsAdvanced: 'Erweiterte Berichte',
     filterByTeacher: 'Lehrer filtern',
     filterBySubject: 'Fach filtern',
-    showAbsencesOnly: 'Nur Abwesenheiten'
+    showAbsencesOnly: 'Nur Abwesenheiten',
+    devMode: '🚧 App in Entwicklung (Beta)',
+    checkEmail: 'E-Mail prüfen',
+    resendCodeIn: 'Neuer Code in',
+    resendCodeBtn: 'Code erneut senden',
+    changeEmail: 'E-Mail ändern / Zurück',
+    errorLinkSent: 'Link gesendet! E-Mail prüfen.',
+    errorResent: 'Code gesendet! E-Mail prüfen.',
+    errInvalidCreds: 'Ungültige Zugangsdaten.',
+    errRateLimit: 'Limit erreicht. Später versuchen.',
+    errCodeExpired: 'Code abgelaufen oder ungültig.',
+    errParentRequired: 'Elterndaten erforderlich.',
+    errRegistrationFailed: 'Registrierung fehlgeschlagen.',
+    enterEmailRecovery: 'Geben Sie Ihre E-Mail ein.'
   }
 };

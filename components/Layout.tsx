@@ -16,6 +16,11 @@ export const Layout = ({ children }: PropsWithChildren) => {
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
       <div className="min-h-screen bg-white/90 backdrop-blur-[2px]">
+        {/* Development Banner */}
+        <div className="fixed bottom-0 right-0 m-2 z-[100] bg-yellow-300 text-yellow-900 text-[10px] font-mono px-3 py-1 rounded-full shadow-lg opacity-80 pointer-events-none uppercase tracking-wider border border-yellow-400 print:hidden">
+          {t('devMode')}
+        </div>
+
         <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 print:hidden shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
