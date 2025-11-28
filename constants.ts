@@ -1,92 +1,11 @@
 
 import { Language, SubjectDef } from './types';
 
-// Data extraction from the uploaded image (Handwritten note)
+// Fallback Subjects in case DB is empty
 export const SUBJECTS_DATA: SubjectDef[] = [
-  { 
-    id: 'math_middle', 
-    translations: { it: 'Matematica (Medie)', es: 'Matemáticas (Media)', en: 'Math (Middle School)', fr: 'Maths (Collège)', de: 'Mathe (Mittelstufe)' },
-    color: 'bg-blue-100 text-blue-800 border-blue-200',
-    icon: '➗'
-  },
-  { 
-    id: 'math_biennio', 
-    translations: { it: 'Matematica (Biennio)', es: 'Matemáticas (1-2 Sup)', en: 'Math (High School 1-2)', fr: 'Maths (Lycée 1-2)', de: 'Mathe (Oberstufe 1-2)' },
-    color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-    icon: '📐'
-  },
-  { 
-    id: 'math_triennio', 
-    translations: { it: 'Matematica (Triennio)', es: 'Matemáticas (3-5 Sup)', en: 'Math (High School 3-5)', fr: 'Maths (Lycée 3-5)', de: 'Mathe (Oberstufe 3-5)' },
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
-    icon: '📈'
-  },
-  { 
-    id: 'physics', 
-    translations: { it: 'Fisica', es: 'Física', en: 'Physics', fr: 'Physique', de: 'Physik' },
-    color: 'bg-red-100 text-red-800 border-red-200',
-    icon: '⚛️'
-  },
-  { 
-    id: 'chemistry', 
-    translations: { it: 'Chimica', es: 'Química', en: 'Chemistry', fr: 'Chimie', de: 'Chemie' },
-    color: 'bg-pink-100 text-pink-800 border-pink-200',
-    icon: '🧪'
-  },
-  { 
-    id: 'italian', 
-    translations: { it: 'Italiano', es: 'Italiano', en: 'Italian', fr: 'Italien', de: 'Italienisch' },
-    color: 'bg-green-100 text-green-800 border-green-200',
-    icon: '🇮🇹'
-  },
-  { 
-    id: 'italian_foreign', 
-    translations: { it: 'Lingua Ital. per Stranieri', es: 'Italiano para Extranjeros', en: 'Italian for Foreigners', fr: 'Italien pour Étrangers', de: 'Italienisch für Ausländer' },
-    color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    icon: '🌍'
-  },
-  { 
-    id: 'english', 
-    translations: { it: 'Inglese', es: 'Inglés', en: 'English', fr: 'Anglais', de: 'Englisch' },
-    color: 'bg-sky-100 text-sky-800 border-sky-200',
-    icon: '🇬🇧'
-  },
-  { 
-    id: 'french', 
-    translations: { it: 'Francese', es: 'Francés', en: 'French', fr: 'Français', de: 'Französisch' },
-    color: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-    icon: '🇫🇷'
-  },
-  { 
-    id: 'spanish', 
-    translations: { it: 'Spagnolo', es: 'Español', en: 'Spanish', fr: 'Espagnol', de: 'Spanisch' },
-    color: 'bg-orange-100 text-orange-800 border-orange-200',
-    icon: '🇪🇸'
-  },
-  { 
-    id: 'german', 
-    translations: { it: 'Tedesco', es: 'Alemán', en: 'German', fr: 'Allemand', de: 'Deutsch' },
-    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    icon: '🇩🇪'
-  },
-  { 
-    id: 'history', 
-    translations: { it: 'Storia', es: 'Historia', en: 'History', fr: 'Histoire', de: 'Geschichte' },
-    color: 'bg-amber-100 text-amber-800 border-amber-200',
-    icon: '📜'
-  },
-  { 
-    id: 'geography', 
-    translations: { it: 'Geografia', es: 'Geografía', en: 'Geography', fr: 'Géographie', de: 'Geografie' },
-    color: 'bg-lime-100 text-lime-800 border-lime-200',
-    icon: '🗺️'
-  },
-  { 
-    id: 'law', 
-    translations: { it: 'Diritto', es: 'Derecho', en: 'Law', fr: 'Droit', de: 'Recht' },
-    color: 'bg-slate-100 text-slate-800 border-slate-200',
-    icon: '⚖️'
-  },
+  { id: 'math', translations: { it: 'Matematica', es: 'Matemáticas', en: 'Math', fr: 'Maths', de: 'Mathe' }, color: 'bg-blue-100 text-blue-800', icon: '➗' },
+  { id: 'physics', translations: { it: 'Fisica', es: 'Física', en: 'Physics', fr: 'Physique', de: 'Physik' }, color: 'bg-red-100 text-red-800', icon: '⚛️' },
+  { id: 'english', translations: { it: 'Inglese', es: 'Inglés', en: 'English', fr: 'Anglais', de: 'Englisch' }, color: 'bg-sky-100 text-sky-800', icon: '🇬🇧' },
 ];
 
 export const DICTIONARY: Record<Language, Record<string, string>> = {
@@ -162,7 +81,26 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterNewPassword: 'Inserisci la nuova password',
     updatePassword: 'Aggiorna Password',
     manageHolidays: 'Gestione Festività',
-    addHoliday: 'Aggiungi Festività'
+    addHoliday: 'Aggiungi Festività',
+    manageUsers: 'Gestione Utenti',
+    manageSubjects: 'Gestione Materie',
+    settings: 'Impostazioni',
+    deleteUser: 'Elimina Utente',
+    attendance: 'Presenze',
+    markPresent: 'Presente',
+    markAbsent: 'Assente',
+    status: 'Stato',
+    addSubject: 'Aggiungi Materia',
+    subjectName: 'Nome Materia',
+    icon: 'Icona',
+    color: 'Colore',
+    preview: 'Anteprima',
+    save: 'Salva',
+    delete: 'Elimina',
+    reportsAdvanced: 'Report Avanzati',
+    filterByTeacher: 'Filtra per Docente',
+    filterBySubject: 'Filtra per Materia',
+    showAbsencesOnly: 'Mostra solo Assenze'
   },
   en: {
     welcome: 'After-School Portal',
@@ -236,7 +174,26 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterNewPassword: 'Enter new password',
     updatePassword: 'Update Password',
     manageHolidays: 'Holiday Management',
-    addHoliday: 'Add Holiday'
+    addHoliday: 'Add Holiday',
+    manageUsers: 'Manage Users',
+    manageSubjects: 'Manage Subjects',
+    settings: 'Settings',
+    deleteUser: 'Delete User',
+    attendance: 'Attendance',
+    markPresent: 'Present',
+    markAbsent: 'Absent',
+    status: 'Status',
+    addSubject: 'Add Subject',
+    subjectName: 'Subject Name',
+    icon: 'Icon',
+    color: 'Color',
+    preview: 'Preview',
+    save: 'Save',
+    delete: 'Delete',
+    reportsAdvanced: 'Advanced Reports',
+    filterByTeacher: 'Filter by Teacher',
+    filterBySubject: 'Filter by Subject',
+    showAbsencesOnly: 'Show Absences Only'
   },
   es: {
     welcome: 'Portal Doposcuola',
@@ -310,7 +267,26 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterNewPassword: 'Ingresa nueva contraseña',
     updatePassword: 'Actualizar Contraseña',
     manageHolidays: 'Gestión de Feriados',
-    addHoliday: 'Agregar Feriado'
+    addHoliday: 'Agregar Feriado',
+    manageUsers: 'Gestión de Usuarios',
+    manageSubjects: 'Gestión de Materias',
+    settings: 'Configuración',
+    deleteUser: 'Eliminar Usuario',
+    attendance: 'Asistencia',
+    markPresent: 'Presente',
+    markAbsent: 'Ausente',
+    status: 'Estado',
+    addSubject: 'Nueva Materia',
+    subjectName: 'Nombre Materia',
+    icon: 'Icono',
+    color: 'Color',
+    preview: 'Vista Previa',
+    save: 'Guardar',
+    delete: 'Borrar',
+    reportsAdvanced: 'Reportes Avanzados',
+    filterByTeacher: 'Filtrar por Docente',
+    filterBySubject: 'Filtrar por Materia',
+    showAbsencesOnly: 'Solo Ausencias'
   },
   fr: {
     welcome: 'Portail Doposcuola',
@@ -384,7 +360,26 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterNewPassword: 'Entrez le nouveau mot de passe',
     updatePassword: 'Mettre à jour',
     manageHolidays: 'Gestion des Vacances',
-    addHoliday: 'Ajouter Vacances'
+    addHoliday: 'Ajouter Vacances',
+    manageUsers: 'Gérer les utilisateurs',
+    manageSubjects: 'Gérer les matières',
+    settings: 'Paramètres',
+    deleteUser: 'Supprimer',
+    attendance: 'Présence',
+    markPresent: 'Présent',
+    markAbsent: 'Absent',
+    status: 'Statut',
+    addSubject: 'Ajouter Matière',
+    subjectName: 'Nom Matière',
+    icon: 'Icône',
+    color: 'Couleur',
+    preview: 'Aperçu',
+    save: 'Sauvegarder',
+    delete: 'Supprimer',
+    reportsAdvanced: 'Rapports Avancés',
+    filterByTeacher: 'Filtrer par Enseignant',
+    filterBySubject: 'Filtrer par Matière',
+    showAbsencesOnly: 'Voir Absences'
   },
   de: {
     welcome: 'Doposcuola Portal',
@@ -458,6 +453,25 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterNewPassword: 'Neues Passwort eingeben',
     updatePassword: 'Passwort aktualisieren',
     manageHolidays: 'Feiertagsmanagement',
-    addHoliday: 'Feiertag hinzufügen'
+    addHoliday: 'Feiertag hinzufügen',
+    manageUsers: 'Benutzer verwalten',
+    manageSubjects: 'Fächer verwalten',
+    settings: 'Einstellungen',
+    deleteUser: 'Benutzer löschen',
+    attendance: 'Anwesenheit',
+    markPresent: 'Anwesend',
+    markAbsent: 'Abwesend',
+    status: 'Status',
+    addSubject: 'Fach hinzufügen',
+    subjectName: 'Fachname',
+    icon: 'Icon',
+    color: 'Farbe',
+    preview: 'Vorschau',
+    save: 'Speichern',
+    delete: 'Löschen',
+    reportsAdvanced: 'Erweiterte Berichte',
+    filterByTeacher: 'Lehrer filtern',
+    filterBySubject: 'Fach filtern',
+    showAbsencesOnly: 'Nur Abwesenheiten'
   }
 };

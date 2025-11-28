@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { dataService } from '../services/dataService';
-import { Booking, Holiday } from '../types';
-import { SUBJECTS_DATA } from '../constants';
+import { Booking, Holiday, SubjectDef } from '../types';
 
 export const StudentDashboard = () => {
   const { user } = useAuth();
@@ -16,18 +15,21 @@ export const StudentDashboard = () => {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [message, setMessage] = useState('');
   const [errorState, setErrorState] = useState('');
+  const [subjects, setSubjects] = useState<SubjectDef[]>([]);
 
   const refreshData = async () => {
     if (!user) return;
     
     // Fetch parallel data
-    const [allBookings, hols] = await Promise.all([
+    const [allBookings, hols, subs] = await Promise.all([
         dataService.getBookings(),
-        dataService.getHolidays()
+        dataService.getHolidays(),
+        dataService.getSubjects()
     ]);
     
     const myBookings = allBookings.filter(b => b.studentId === user.id || (b as any).student_id === user.id);
     
+    setSubjects(subs);
     setHolidays(hols);
     setBookings(myBookings); 
     setAvailableDates(dataService.getAvailableDates());
@@ -38,7 +40,6 @@ export const StudentDashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    // Select first valid date that isn't a holiday
     if (availableDates.length > 0 && !selectedDate) {
         const validDate = availableDates.find(d => !holidays.find(h => h.date === d));
         if (validDate) setSelectedDate(validDate);
@@ -78,12 +79,12 @@ export const StudentDashboard = () => {
   };
 
   const getSubjectName = (id: string) => {
-    const sub = SUBJECTS_DATA.find(s => s.id === id);
-    return sub ? sub.translations[language] : id;
+    const sub = subjects.find(s => s.id === id);
+    return sub ? (sub.translations[language] || sub.translations['en']) : id;
   };
 
   const getSubjectIcon = (id: string) => {
-    const sub = SUBJECTS_DATA.find(s => s.id === id);
+    const sub = subjects.find(s => s.id === id);
     return sub ? sub.icon : '📚';
   };
 
@@ -158,7 +159,7 @@ export const StudentDashboard = () => {
              </h2>
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {SUBJECTS_DATA.map(sub => {
+                {subjects.map(sub => {
                     const existingBooking = bookings.find(b => b.date === selectedDate && (b.subjectId === sub.id || (b as any).subject_id === sub.id));
                     const isBooked = !!existingBooking;
 
@@ -176,7 +177,7 @@ export const StudentDashboard = () => {
                         >
                             <div className="text-3xl mb-3">{sub.icon}</div>
                             <div className={`font-semibold text-sm leading-tight ${selectedSubjectId === sub.id ? 'text-orange-900' : 'text-gray-700'}`}>
-                                {sub.translations[language]}
+                                {sub.translations[language] || sub.translations['en']}
                             </div>
                             
                             {selectedSubjectId === sub.id && !isBooked && (

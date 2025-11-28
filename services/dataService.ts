@@ -1,6 +1,7 @@
 
-import { User, Booking, Announcement, Holiday } from '../types';
+import { User, Booking, Announcement, Holiday, SubjectDef, AttendanceStatus } from '../types';
 import { supabase } from './supabaseClient';
+import { SUBJECTS_DATA as FALLBACK_SUBJECTS } from '../constants';
 
 const isSupabaseConfigured = () => !!supabase;
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -12,7 +13,6 @@ export const dataService = {
   createUser: async (user: User): Promise<User | null> => {
     if (!isSupabaseConfigured()) throw new Error("Supabase not connected");
     
-    // Using upsert and ignoring duplicate key error by selecting the row
     const { data, error } = await supabase!
       .from('users')
       .upsert([{
@@ -31,11 +31,7 @@ export const dataService = {
       .single();
 
     if (error) {
-         // If it's a primary key violation, likely the user clicked twice or race condition. 
-         // Just fetch and return existing.
-         if (error.code === '23505') {
-             return dataService.getUserById(user.id);
-         }
+         if (error.code === '23505') return dataService.getUserById(user.id);
          throw error;
     }
     return data;
@@ -47,23 +43,6 @@ export const dataService = {
       .from('users')
       .select('*')
       .eq('id', id)
-      .single();
-    if (error) return null;
-    return {
-        ...data,
-        parentName: data.parent_name,
-        parentEmail: data.parent_email,
-        isAdmin: data.is_admin,
-        isLeader: data.is_leader
-    };
-  },
-
-  getUserByEmail: async (email: string): Promise<User | null> => {
-     if (!isSupabaseConfigured()) return null;
-     const { data, error } = await supabase!
-      .from('users')
-      .select('*')
-      .ilike('email', email)
       .single();
     if (error) return null;
     return {
@@ -103,6 +82,30 @@ export const dataService = {
     }));
   },
 
+  updateUser: async (id: string, updates: Partial<User>) => {
+      if (!isSupabaseConfigured()) return;
+      // Map frontend keys to DB keys
+      const dbUpdates: any = { ...updates };
+      if (updates.parentName) dbUpdates.parent_name = updates.parentName;
+      if (updates.parentEmail) dbUpdates.parent_email = updates.parentEmail;
+      if (updates.isAdmin !== undefined) dbUpdates.is_admin = updates.isAdmin;
+      if (updates.isLeader !== undefined) dbUpdates.is_leader = updates.isLeader;
+      
+      delete dbUpdates.parentName;
+      delete dbUpdates.parentEmail;
+      delete dbUpdates.isAdmin;
+      delete dbUpdates.isLeader;
+
+      await supabase!.from('users').update(dbUpdates).eq('id', id);
+  },
+
+  deleteUser: async (id: string) => {
+      if (!isSupabaseConfigured()) return;
+      // Also delete bookings to avoid constraint errors (or rely on cascade)
+      await supabase!.from('bookings').delete().or(`student_id.eq.${id},teacher_id.eq.${id}`);
+      await supabase!.from('users').delete().eq('id', id);
+  },
+
   toggleLeaderStatus: async (userId: string, currentStatus: boolean) => {
     if (!isSupabaseConfigured()) return;
     await supabase!.from('users').update({ is_leader: !currentStatus }).eq('id', userId);
@@ -113,22 +116,26 @@ export const dataService = {
     await supabase!.from('users').update({ status: 'APPROVED' }).eq('id', userId);
   },
 
-  // --- AUTH UTILS ---
-  sendPasswordReset: async (email: string) => {
-    if (!isSupabaseConfigured()) return;
-    const { error } = await supabase!.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.href, // Using href instead of origin for cleaner handling
-    });
-    if (error) throw error;
+  // --- SUBJECTS (Dynamic) ---
+  getSubjects: async (): Promise<SubjectDef[]> => {
+      if (!isSupabaseConfigured()) return FALLBACK_SUBJECTS;
+      const { data, error } = await supabase!.from('subjects').select('*').eq('active', true);
+      
+      if (error || !data || data.length === 0) return FALLBACK_SUBJECTS;
+      return data;
   },
 
-  updatePassword: async (password: string) => {
-    if (!isSupabaseConfigured()) return;
-    const { error } = await supabase!.auth.updateUser({ password });
-    if (error) throw error;
+  createSubject: async (subject: SubjectDef) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('subjects').upsert([subject]);
   },
 
-  // --- BOOKINGS ---
+  deleteSubject: async (id: string) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('subjects').update({ active: false }).eq('id', id);
+  },
+
+  // --- BOOKINGS & ATTENDANCE ---
   getBookings: async (): Promise<Booking[]> => {
     if (!isSupabaseConfigured()) return [];
     const { data, error } = await supabase!.from('bookings').select('*');
@@ -139,7 +146,8 @@ export const dataService = {
         studentName: b.student_name,
         subjectId: b.subject_id,
         teacherId: b.teacher_id,
-        teacherName: b.teacher_name
+        teacherName: b.teacher_name,
+        attendance: b.attendance || 'PENDING'
     }));
   },
 
@@ -158,7 +166,8 @@ export const dataService = {
         student_id: student.id,
         student_name: student.name,
         subject_id: subjectId,
-        date: date
+        date: date,
+        attendance: 'PENDING'
     }]);
     if (error) throw error;
   },
@@ -196,7 +205,12 @@ export const dataService = {
     await supabase!.from('bookings').update({ notes }).eq('id', bookingId);
   },
 
-  // --- ANNOUNCEMENTS ---
+  updateAttendance: async (bookingId: string, status: AttendanceStatus) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('bookings').update({ attendance: status }).eq('id', bookingId);
+  },
+
+  // --- ANNOUNCEMENTS, HOLIDAYS, AUTH ---
   getAnnouncements: async (): Promise<Announcement[]> => {
     if (!isSupabaseConfigured()) return [];
     const { data } = await supabase!
@@ -216,7 +230,6 @@ export const dataService = {
     }]);
   },
 
-  // --- HOLIDAYS ---
   getHolidays: async (): Promise<Holiday[]> => {
       if (!isSupabaseConfigured()) return [];
       const { data } = await supabase!.from('holidays').select('*').order('date');
@@ -233,20 +246,18 @@ export const dataService = {
       await supabase!.from('holidays').delete().eq('id', id);
   },
 
-  // --- SYSTEM SETTINGS ---
-  getSystemSettings: async (key: string): Promise<string | null> => {
-      if (!isSupabaseConfigured()) return null;
-      const { data } = await supabase!
-        .from('system_settings')
-        .select('value')
-        .eq('key', key)
-        .single();
-      return data?.value || null;
+  sendPasswordReset: async (email: string) => {
+    if (!isSupabaseConfigured()) return;
+    const { error } = await supabase!.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.href,
+    });
+    if (error) throw error;
   },
 
-  setSystemSettings: async (key: string, value: string) => {
-      if (!isSupabaseConfigured()) return;
-      await supabase!.from('system_settings').upsert([{ key, value }]);
+  updatePassword: async (password: string) => {
+    if (!isSupabaseConfigured()) return;
+    const { error } = await supabase!.auth.updateUser({ password });
+    if (error) throw error;
   },
 
   // --- UTILS ---

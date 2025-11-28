@@ -4,12 +4,15 @@ export enum Role {
   TEACHER = 'TEACHER',
 }
 
-// Subject is now a full object, not just an enum, to support the specific list from the image
+export type AttendanceStatus = 'PENDING' | 'PRESENT' | 'ABSENT';
+
+// Subject definition matching the DB structure
 export interface SubjectDef {
   id: string;
   translations: { [key in string]: string }; // Map lang code to name
   color: string;
   icon: string; // Emoji or icon name
+  active?: boolean;
 }
 
 export interface User {
@@ -38,6 +41,7 @@ export interface Booking {
   teacherId?: string;
   teacherName?: string;
   notes?: string;
+  attendance?: AttendanceStatus;
 }
 
 export interface Announcement {

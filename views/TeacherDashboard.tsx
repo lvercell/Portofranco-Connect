@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { dataService } from '../services/dataService';
-import { Booking } from '../types';
-import { SUBJECTS_DATA } from '../constants';
+import { Booking, SubjectDef } from '../types';
 
 export const TeacherDashboard = () => {
   const { user } = useAuth();
@@ -12,22 +12,20 @@ export const TeacherDashboard = () => {
   const [activeDate, setActiveDate] = useState<string>('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteContent, setNoteContent] = useState('');
+  const [subjects, setSubjects] = useState<SubjectDef[]>([]);
 
   const refresh = async () => {
     const dates = dataService.getAvailableDates();
     if (!activeDate && dates.length > 0) setActiveDate(dates[0]);
-    const data = await dataService.getBookings();
     
-    // Normalize Supabase data for local use if snake_case is returned
-    const normalized = data.map((b: any) => ({
-        ...b,
-        studentId: b.student_id || b.studentId,
-        studentName: b.student_name || b.studentName,
-        subjectId: b.subject_id || b.subjectId,
-        teacherId: b.teacher_id || b.teacherId,
-        teacherName: b.teacher_name || b.teacherName
-    }));
-    setAllBookings(normalized);
+    // Fetch bookings and subjects concurrently
+    const [data, subs] = await Promise.all([
+        dataService.getBookings(),
+        dataService.getSubjects()
+    ]);
+    
+    setSubjects(subs);
+    setAllBookings(data);
   };
 
   useEffect(() => {
@@ -60,8 +58,13 @@ export const TeacherDashboard = () => {
     refresh();
   };
 
+  const markAttendance = async (bookingId: string, status: 'PRESENT' | 'ABSENT') => {
+      await dataService.updateAttendance(bookingId, status);
+      refresh();
+  };
+
   const getSubjectDetails = (id: string) => {
-    return SUBJECTS_DATA.find(s => s.id === id) || { translations: { [language]: id }, color: 'bg-gray-100', icon: '❓' };
+    return subjects.find(s => s.id === id) || { translations: { [language]: id }, color: 'bg-gray-100', icon: '❓' };
   };
 
   // Filter logic
@@ -73,7 +76,7 @@ export const TeacherDashboard = () => {
       
       {/* Date Navigation */}
       <div className="flex justify-center mb-8">
-        <div className="bg-white p-2 rounded-full shadow-sm border inline-flex gap-2">
+        <div className="bg-white p-2 rounded-full shadow-sm border inline-flex gap-2 flex-wrap justify-center">
             {dataService.getAvailableDates().map(date => (
             <button
                 key={date}
@@ -116,7 +119,7 @@ export const TeacherDashboard = () => {
                             {sub.icon}
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-900 text-lg">{sub.translations[language]}</h3>
+                            <h3 className="font-bold text-gray-900 text-lg">{sub.translations[language] || sub.translations['en']}</h3>
                             <div className="text-sm text-gray-500 flex items-center gap-1">
                                 <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs uppercase font-bold tracking-wide">Student</span>
                                 {b.studentName}
@@ -158,14 +161,13 @@ export const TeacherDashboard = () => {
                   <div className="flex items-center gap-3">
                      <span className="text-2xl">{sub.icon}</span>
                      <div>
-                        <span className="font-bold text-gray-800 block text-lg">{sub.translations[language]}</span>
+                        <span className="font-bold text-gray-800 block text-lg">{sub.translations[language] || sub.translations['en']}</span>
                         <span className="text-sm text-gray-500">{b.studentName}</span>
                      </div>
                   </div>
                   
                   <div className="flex flex-col items-end gap-2">
                       <div className="text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">14:30 - 16:30</div>
-                      
                       <button 
                         onClick={() => handleUnclaim(b.id)}
                         className="text-xs text-red-500 border border-red-200 px-2 py-1 rounded bg-white hover:bg-red-500 hover:text-white transition-colors"
@@ -173,6 +175,23 @@ export const TeacherDashboard = () => {
                          {t('releaseClass')}
                       </button>
                   </div>
+                </div>
+
+                {/* Attendance Controls */}
+                <div className="flex gap-2 mb-4 border-t border-b py-2 border-gray-100">
+                    <span className="text-xs font-bold text-gray-400 uppercase self-center mr-2">{t('attendance')}:</span>
+                    <button 
+                        onClick={() => markAttendance(b.id, 'PRESENT')}
+                        className={`text-xs px-3 py-1 rounded-full border transition-all ${b.attendance === 'PRESENT' ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-400 hover:border-green-400'}`}
+                    >
+                        ✅ {t('markPresent')}
+                    </button>
+                    <button 
+                        onClick={() => markAttendance(b.id, 'ABSENT')}
+                        className={`text-xs px-3 py-1 rounded-full border transition-all ${b.attendance === 'ABSENT' ? 'bg-red-500 text-white border-red-600' : 'bg-white text-gray-400 hover:border-red-400'}`}
+                    >
+                        ❌ {t('markAbsent')}
+                    </button>
                 </div>
                 
                 {/* Notes Section */}

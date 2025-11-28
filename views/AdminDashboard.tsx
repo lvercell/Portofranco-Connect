@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { dataService } from '../services/dataService';
 import { useTheme } from '../context/ThemeContext';
-import { Role, User, Booking } from '../types';
-import { SUBJECTS_DATA } from '../constants';
+import { Role, User, Booking, SubjectDef } from '../types';
 
 const WALLPAPER_PRESETS = [
   { name: 'Library', url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop' },
@@ -13,36 +12,41 @@ const WALLPAPER_PRESETS = [
   { name: 'Minimal Geo', url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop' },
 ];
 
+type Tab = 'USERS' | 'SUBJECTS' | 'REPORTS' | 'SETTINGS';
+
 export const AdminDashboard = () => {
   const { t, language } = useLanguage();
   const { backgroundImage, setBackgroundImage } = useTheme();
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+  const [activeTab, setActiveTab] = useState<Tab>('USERS');
+  
+  // Data State
+  const [users, setUsers] = useState<User[]>([]);
+  const [subjects, setSubjects] = useState<SubjectDef[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [reportDate, setReportDate] = useState<string>('');
+  
+  // Subject Form State
+  const [newSubId, setNewSubId] = useState('');
+  const [newSubName, setNewSubName] = useState('');
+  const [newSubIcon, setNewSubIcon] = useState('📚');
+  const [newSubColor, setNewSubColor] = useState('bg-gray-100 text-gray-800');
+
+  // Report Filter State
+  const [filterMonth, setFilterMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [filterTeacher, setFilterTeacher] = useState<string>('ALL');
+  const [filterSubject, setFilterSubject] = useState<string>('ALL');
+  const [showAbsences, setShowAbsences] = useState(false);
+  
   const [customBg, setCustomBg] = useState('');
 
   const refresh = async () => {
     const allUsers = await dataService.getAllUsers();
-    setTeachers(allUsers.filter(u => u.role === Role.TEACHER));
+    setUsers(allUsers);
     
-    const pendings = await dataService.getPendingUsers();
-    setPendingUsers(pendings);
+    const allSubs = await dataService.getSubjects();
+    setSubjects(allSubs);
 
     const allBookings = await dataService.getBookings();
-    const normalizedBookings = allBookings.map((b: any) => ({
-        ...b,
-        studentId: b.student_id || b.studentId,
-        studentName: b.student_name || b.studentName,
-        subjectId: b.subject_id || b.subjectId,
-        teacherId: b.teacher_id || b.teacherId,
-        teacherName: b.teacher_name || b.teacherName
-    }));
-
-    setBookings(normalizedBookings);
-
-    const available = dataService.getAvailableDates();
-    if (available.length > 0 && !reportDate) setReportDate(available[0]);
+    setBookings(allBookings);
   };
 
   useEffect(() => {
@@ -59,13 +63,32 @@ export const AdminDashboard = () => {
       refresh();
   };
 
-  const getSubjectName = (id: string) => {
-      const s = SUBJECTS_DATA.find(sub => sub.id === id);
-      return s ? s.translations[language] : id;
+  const deleteUser = async (userId: string) => {
+      if(window.confirm('Are you sure you want to delete this user?')) {
+          await dataService.deleteUser(userId);
+          refresh();
+      }
   };
 
-  const handlePrint = () => {
-      window.print();
+  const handleAddSubject = async () => {
+      if(!newSubId || !newSubName) return;
+      const sub: SubjectDef = {
+          id: newSubId.toLowerCase().replace(/\s/g, '_'),
+          translations: { [language]: newSubName, 'en': newSubName, 'it': newSubName, 'es': newSubName, 'fr': newSubName, 'de': newSubName }, // Simple fill for MVP
+          color: newSubColor,
+          icon: newSubIcon,
+          active: true
+      };
+      await dataService.createSubject(sub);
+      setNewSubId(''); setNewSubName('');
+      refresh();
+  };
+
+  const handleDeleteSubject = async (id: string) => {
+      if(window.confirm('Delete subject?')) {
+          await dataService.deleteSubject(id);
+          refresh();
+      }
   };
 
   const handleCustomBg = (e: React.FormEvent) => {
@@ -73,19 +96,45 @@ export const AdminDashboard = () => {
     if(customBg) setBackgroundImage(customBg);
   }
 
-  const reportData = bookings.filter(b => b.date === reportDate);
+  // --- Filtering Logic ---
+  const pendingUsers = users.filter(u => u.status === 'PENDING');
+  
+  const filteredBookings = bookings.filter(b => {
+      const matchMonth = b.date.startsWith(filterMonth);
+      const matchTeacher = filterTeacher === 'ALL' || b.teacherId === filterTeacher;
+      const matchSubject = filterSubject === 'ALL' || b.subjectId === filterSubject;
+      const matchAbsence = !showAbsences || b.attendance === 'ABSENT';
+      return matchMonth && matchTeacher && matchSubject && matchAbsence;
+  });
+
+  const getSubjectName = (id: string) => {
+      const s = subjects.find(sub => sub.id === id);
+      return s ? (s.translations[language] || s.translations['en']) : id;
+  };
+
+  const TabButton = ({ id, label, icon }: { id: Tab, label: string, icon: string }) => (
+      <button 
+        onClick={() => setActiveTab(id)}
+        className={`flex-1 py-3 font-bold flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === id ? 'border-indigo-600 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+      >
+          <span>{icon}</span> {label}
+      </button>
+  );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12">
+    <div className="max-w-6xl mx-auto space-y-8 min-h-screen">
       
-      {/* 0. Pending Requests Panel */}
+      {/* 0. Pending Requests Alert */}
       {pendingUsers.length > 0 && (
           <div className="bg-orange-50 p-6 rounded-xl shadow-sm border border-orange-200">
-             <div className="border-b border-orange-200 pb-4 mb-4">
-                <h2 className="text-xl font-bold text-orange-800">⏳ {t('pendingRequests')}</h2>
-                <p className="text-sm text-orange-700">Approve new user registrations.</p>
+             <div className="flex justify-between items-center mb-4">
+                <div>
+                    <h2 className="text-xl font-bold text-orange-800">⏳ {t('pendingRequests')}</h2>
+                    <p className="text-sm text-orange-700">Approve new user registrations.</p>
+                </div>
+                <span className="bg-orange-200 text-orange-800 px-3 py-1 rounded-full text-xs font-bold">{pendingUsers.length}</span>
              </div>
-             <div className="grid gap-4">
+             <div className="grid gap-4 max-h-60 overflow-y-auto">
                  {pendingUsers.map(u => (
                      <div key={u.id} className="bg-white p-4 rounded-lg flex justify-between items-center shadow-sm">
                          <div>
@@ -93,185 +142,217 @@ export const AdminDashboard = () => {
                              <p className="text-sm text-gray-500">{u.email}</p>
                              <p className="text-xs text-gray-400">DOB: {u.dob} (Age: {u.age})</p>
                          </div>
-                         <button 
-                            onClick={() => approveUser(u.id)}
-                            className="bg-green-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-green-700 shadow-sm"
-                         >
-                             {t('approve')}
-                         </button>
+                         <div className="flex gap-2">
+                            <button onClick={() => deleteUser(u.id)} className="text-red-500 text-sm hover:underline px-2">Reject</button>
+                            <button onClick={() => approveUser(u.id)} className="bg-green-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-green-700 shadow-sm">{t('approve')}</button>
+                         </div>
                      </div>
                  ))}
              </div>
           </div>
       )}
 
-      {/* 1. Appearance Panel (New) */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-        <div className="border-b pb-4 mb-4">
-            <h2 className="text-xl font-bold text-gray-800">🎨 System Appearance</h2>
-            <p className="text-sm text-gray-500">Change the background wallpaper for the portal.</p>
-        </div>
-        
-        <div className="space-y-4">
-           <div>
-             <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Presets</label>
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-               {WALLPAPER_PRESETS.map(p => (
-                 <button 
-                   key={p.name}
-                   onClick={() => setBackgroundImage(p.url)}
-                   className={`h-24 rounded-lg bg-cover bg-center border-4 transition-all hover:opacity-100 ${backgroundImage === p.url ? 'border-indigo-500 opacity-100' : 'border-transparent opacity-60'}`}
-                   style={{ backgroundImage: `url(${p.url})` }}
-                 >
-                   <span className="bg-black/50 text-white text-xs px-2 py-1 rounded">{p.name}</span>
-                 </button>
-               ))}
-             </div>
-           </div>
-           
-           <form onSubmit={handleCustomBg}>
-             <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Or Custom URL</label>
-             <div className="flex gap-2">
-               <input 
-                type="text" 
-                placeholder="https://example.com/image.jpg"
-                value={customBg}
-                onChange={e => setCustomBg(e.target.value)}
-                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-               />
-               <button className="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-900">Set</button>
-             </div>
-           </form>
-        </div>
-      </div>
-
-      {/* 2. Leader Management */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-        <div className="border-b pb-4 mb-4">
-            <h2 className="text-xl font-bold text-gray-800">{t('adminPanel')} - {t('manageLeaders')}</h2>
-            <p className="text-sm text-gray-500">Authorize teachers to send global announcements.</p>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('name')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('email')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('isLeader')}</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {teachers.map((teacher) => (
-                <tr key={teacher.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{teacher.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${teacher.isLeader ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {teacher.isLeader ? 'LEADER' : '-'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {teacher.isAdmin ? (
-                        <span className="text-gray-400 italic text-xs flex items-center justify-end gap-1">
-                            🔒 {t('superAdmin')}
-                        </span>
-                    ) : (
-                        <button 
-                        onClick={() => toggleLeader(teacher.id, teacher.isLeader)}
-                        className={`${teacher.isLeader ? 'text-red-600 hover:text-red-900' : 'text-indigo-600 hover:text-indigo-900'}`}
-                        >
-                        {teacher.isLeader ? t('demoteLeader') : t('promoteToLeader')}
-                        </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 3. Reporting Section (Printable) */}
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 print:shadow-none print:border-none">
-          <div className="flex justify-between items-end mb-6 print:hidden">
-              <div>
-                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    📄 {t('reports')}
-                  </h2>
-                  <p className="text-gray-500 mt-1">Daily match report for classes.</p>
-              </div>
-              <div className="flex gap-4 items-end">
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('date')}</label>
-                    <select 
-                        value={reportDate} 
-                        onChange={(e) => setReportDate(e.target.value)}
-                        className="border p-2 rounded bg-gray-50"
-                    >
-                        {dataService.getAvailableDates().map(d => (
-                            <option key={d} value={d}>{d}</option>
-                        ))}
-                    </select>
-                </div>
-                <button 
-                    onClick={handlePrint}
-                    className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-black transition-colors"
-                >
-                    🖨️ {t('printReport')}
-                </button>
-              </div>
+      {/* Main Panel */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="flex border-b border-gray-200">
+              <TabButton id="USERS" label={t('manageUsers')} icon="👥" />
+              <TabButton id="SUBJECTS" label={t('manageSubjects')} icon="📚" />
+              <TabButton id="REPORTS" label={t('reportsAdvanced')} icon="📊" />
+              <TabButton id="SETTINGS" label={t('settings')} icon="🎨" />
           </div>
 
-          {/* Printable Area */}
-          <div className="print:w-full">
-            <div className="mb-6 border-b-2 border-black pb-2 flex justify-between items-baseline">
-                <h1 className="text-3xl font-black uppercase tracking-wider">Doposcuola Connect</h1>
-                <div className="text-right">
-                    <h2 className="text-xl font-medium uppercase text-gray-600">{t('reports')}</h2>
-                    <span className="text-lg font-bold">{new Date(reportDate).toLocaleDateString()}</span>
-                </div>
-            </div>
-
-            <table className="w-full text-left border-collapse">
-                <thead>
-                    <tr className="border-b-2 border-black">
-                        <th className="py-2 text-sm uppercase font-bold text-gray-600 w-1/3">{t('student')}</th>
-                        <th className="py-2 text-sm uppercase font-bold text-gray-600 w-1/3">{t('subject')}</th>
-                        <th className="py-2 text-sm uppercase font-bold text-gray-600 w-1/3">{t('teacher')}</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-300">
-                    {reportData.length === 0 && (
-                        <tr><td colSpan={3} className="py-8 text-center text-gray-400 italic">{t('noClasses')}</td></tr>
-                    )}
-                    {reportData.map(b => (
-                        <tr key={b.id} className="group">
-                            <td className="py-3 font-medium">{b.studentName}</td>
-                            <td className="py-3 text-gray-700">{getSubjectName(b.subjectId)}</td>
-                            <td className="py-3">
-                                {b.teacherName ? (
-                                    <span className="font-bold text-black">✅ {b.teacherName}</span>
-                                ) : (
-                                    <span className="text-red-500 font-mono text-sm uppercase">[ {t('unclaimed')} ]</span>
-                                )}
-                            </td>
+          <div className="p-6">
+              
+              {/* --- USERS TAB --- */}
+              {activeTab === 'USERS' && (
+                 <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('name')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('role')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('status')}</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                        {users.filter(u => u.status !== 'PENDING').map((u) => (
+                            <tr key={u.id}>
+                                <td className="px-6 py-4">
+                                    <div className="text-sm font-medium text-gray-900">{u.name}</div>
+                                    <div className="text-xs text-gray-500">{u.email}</div>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-500">{u.role}</td>
+                                <td className="px-6 py-4">
+                                    {u.isLeader && <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">Leader</span>}
+                                    {u.isAdmin && <span className="ml-1 bg-gray-800 text-white text-xs px-2 py-1 rounded-full font-bold">Admin</span>}
+                                </td>
+                                <td className="px-6 py-4 text-right text-sm font-medium space-x-2">
+                                    {!u.isAdmin && u.role === Role.TEACHER && (
+                                        <button onClick={() => toggleLeader(u.id, u.isLeader)} className="text-indigo-600 hover:text-indigo-900">
+                                            {u.isLeader ? t('demoteLeader') : t('promoteToLeader')}
+                                        </button>
+                                    )}
+                                    {!u.isAdmin && (
+                                        <button onClick={() => deleteUser(u.id)} className="text-red-600 hover:text-red-900 ml-4">
+                                            {t('delete')}
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                 </div>
+              )}
 
-            <div className="mt-12 pt-4 border-t border-gray-300 text-xs text-center text-gray-400">
-                {t('generatedBy')}
-            </div>
+              {/* --- SUBJECTS TAB --- */}
+              {activeTab === 'SUBJECTS' && (
+                  <div className="space-y-8">
+                      {/* Add Form */}
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-wrap gap-4 items-end">
+                          <div className="flex-1 min-w-[150px]">
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">ID (e.g. math)</label>
+                              <input type="text" value={newSubId} onChange={e => setNewSubId(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                          </div>
+                          <div className="flex-1 min-w-[200px]">
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('subjectName')}</label>
+                              <input type="text" value={newSubName} onChange={e => setNewSubName(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                          </div>
+                          <div className="w-20">
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('icon')}</label>
+                              <select value={newSubIcon} onChange={e => setNewSubIcon(e.target.value)} className="w-full border p-2 rounded text-sm">
+                                  {['📚','➗','⚛️','🧬','🌍','🎨','⚽','🇬🇧','🇮🇹'].map(i => <option key={i} value={i}>{i}</option>)}
+                              </select>
+                          </div>
+                           <div className="w-32">
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('color')}</label>
+                              <select value={newSubColor} onChange={e => setNewSubColor(e.target.value)} className="w-full border p-2 rounded text-sm">
+                                  <option value="bg-blue-100 text-blue-800">Blue</option>
+                                  <option value="bg-red-100 text-red-800">Red</option>
+                                  <option value="bg-green-100 text-green-800">Green</option>
+                                  <option value="bg-yellow-100 text-yellow-800">Yellow</option>
+                                  <option value="bg-purple-100 text-purple-800">Purple</option>
+                              </select>
+                          </div>
+                          <button onClick={handleAddSubject} className="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 mb-[1px]">
+                              {t('save')}
+                          </button>
+                      </div>
+
+                      {/* List */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {subjects.map(sub => (
+                              <div key={sub.id} className={`p-3 rounded-lg border flex justify-between items-center ${sub.color}`}>
+                                  <div className="flex items-center gap-2">
+                                      <span className="text-xl">{sub.icon}</span>
+                                      <span className="font-bold">{sub.translations[language] || sub.translations['en']}</span>
+                                  </div>
+                                  <button onClick={() => handleDeleteSubject(sub.id)} className="bg-white/50 hover:bg-white text-red-600 p-1 rounded">🗑️</button>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              )}
+
+              {/* --- REPORTS TAB --- */}
+              {activeTab === 'REPORTS' && (
+                  <div className="space-y-6">
+                      <div className="flex flex-wrap gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Month</label>
+                              <input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="border p-2 rounded text-sm" />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('filterByTeacher')}</label>
+                              <select value={filterTeacher} onChange={e => setFilterTeacher(e.target.value)} className="border p-2 rounded text-sm min-w-[150px]">
+                                  <option value="ALL">All Teachers</option>
+                                  {users.filter(u => u.role === Role.TEACHER).map(t => (
+                                      <option key={t.id} value={t.id}>{t.name}</option>
+                                  ))}
+                              </select>
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('filterBySubject')}</label>
+                              <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)} className="border p-2 rounded text-sm min-w-[150px]">
+                                  <option value="ALL">All Subjects</option>
+                                  {subjects.map(s => (
+                                      <option key={s.id} value={s.id}>{s.translations[language]}</option>
+                                  ))}
+                              </select>
+                          </div>
+                          <div className="flex items-end">
+                              <label className="flex items-center gap-2 cursor-pointer pb-2">
+                                  <input type="checkbox" checked={showAbsences} onChange={e => setShowAbsences(e.target.checked)} />
+                                  <span className="text-sm font-bold text-gray-700">{t('showAbsencesOnly')}</span>
+                              </label>
+                          </div>
+                          <div className="flex items-end ml-auto">
+                             <button onClick={() => window.print()} className="bg-gray-800 text-white px-4 py-2 rounded text-sm font-bold hover:bg-black">
+                                 🖨️ {t('printReport')}
+                             </button>
+                          </div>
+                      </div>
+
+                      <div className="overflow-x-auto print:visible">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b-2 border-black">
+                                    <th className="py-2 text-sm uppercase font-bold text-gray-600">{t('date')}</th>
+                                    <th className="py-2 text-sm uppercase font-bold text-gray-600">{t('student')}</th>
+                                    <th className="py-2 text-sm uppercase font-bold text-gray-600">{t('subject')}</th>
+                                    <th className="py-2 text-sm uppercase font-bold text-gray-600">{t('teacher')}</th>
+                                    <th className="py-2 text-sm uppercase font-bold text-gray-600 text-right">{t('attendance')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {filteredBookings.length === 0 && (
+                                    <tr><td colSpan={5} className="py-8 text-center text-gray-400 italic">{t('noClasses')}</td></tr>
+                                )}
+                                {filteredBookings.map(b => (
+                                    <tr key={b.id} className="group hover:bg-gray-50">
+                                        <td className="py-3 text-sm text-gray-500">{b.date}</td>
+                                        <td className="py-3 font-medium">{b.studentName}</td>
+                                        <td className="py-3 text-gray-700">{getSubjectName(b.subjectId)}</td>
+                                        <td className="py-3 text-sm">{b.teacherName || '-'}</td>
+                                        <td className="py-3 text-right">
+                                            {b.attendance === 'PRESENT' && <span className="text-green-600 font-bold">✅ {t('markPresent')}</span>}
+                                            {b.attendance === 'ABSENT' && <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded">❌ {t('markAbsent')}</span>}
+                                            {b.attendance === 'PENDING' && <span className="text-gray-400">-</span>}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                      </div>
+                  </div>
+              )}
+
+              {/* --- SETTINGS TAB --- */}
+              {activeTab === 'SETTINGS' && (
+                  <div className="space-y-6">
+                      <h3 className="font-bold text-gray-700">Wallpaper</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {WALLPAPER_PRESETS.map(p => (
+                            <button 
+                            key={p.name}
+                            onClick={() => setBackgroundImage(p.url)}
+                            className={`h-24 rounded-lg bg-cover bg-center border-4 transition-all hover:opacity-100 ${backgroundImage === p.url ? 'border-indigo-500 opacity-100' : 'border-transparent opacity-60'}`}
+                            style={{ backgroundImage: `url(${p.url})` }}
+                            >
+                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded">{p.name}</span>
+                            </button>
+                        ))}
+                      </div>
+                      <form onSubmit={handleCustomBg} className="flex gap-2 max-w-md">
+                        <input type="text" placeholder="Custom Image URL" value={customBg} onChange={e => setCustomBg(e.target.value)} className="flex-1 border p-2 rounded text-sm"/>
+                        <button className="bg-gray-800 text-white px-3 py-1 rounded text-sm">Set</button>
+                      </form>
+                  </div>
+              )}
+
           </div>
       </div>
-
     </div>
   );
 };
