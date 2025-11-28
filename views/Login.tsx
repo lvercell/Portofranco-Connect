@@ -226,9 +226,9 @@ export const Login = () => {
                 type="text" 
                 value={otp} 
                 onChange={(e) => setOtp(e.target.value)} 
-                className="w-full text-center text-3xl tracking-[0.5em] border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-mono"
-                placeholder="000000"
-                maxLength={6}
+                className="w-full text-center text-3xl tracking-[0.25em] border-2 border-gray-200 p-3 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-mono"
+                placeholder="00000000"
+                maxLength={8}
                 required
               />
             </div>

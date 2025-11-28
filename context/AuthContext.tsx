@@ -148,7 +148,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     // 'email' type covers both magic link token and numeric OTP in most Supabase configs
     const { error } = await supabase.auth.verifyOtp({
         email: emailForMfa,
-        token: code,
+        token: code.trim(),
         type: 'email'
     });
     if (error) throw error;
