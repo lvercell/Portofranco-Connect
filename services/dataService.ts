@@ -317,7 +317,13 @@ export const dataService = {
 
   getWallpaper: async (): Promise<string | null> => {
       if (!isSupabaseConfigured()) return null;
-      const { data } = await supabase!.from('system_settings').select('value').eq('key', 'app_bg').single();
+      const { data, error } = await supabase!.from('system_settings').select('value').eq('key', 'app_bg').single();
+      
+      if (error) {
+          // If error is permission denied (code 42501 or PGRST301), it means public read policy is missing
+          console.warn("Error fetching wallpaper (check RLS policies):", error.message);
+          return null;
+      }
       return data?.value || null;
   },
 
