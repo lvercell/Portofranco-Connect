@@ -12,6 +12,10 @@ const WALLPAPER_PRESETS = [
   { name: 'Minimal Geo', url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop' },
 ];
 
+const SUBJECT_ICONS = [
+    '📚','➗','📐','⚛️','🧪','🧬','🌍','🗺️','🎨','🎵','🎭','⚽','🏃','🇬🇧','🇮🇹','🇪🇸','🇫🇷','🇩🇪','💻','⚖️','🧠','🏛️','📝','🏺','💼'
+];
+
 type Tab = 'USERS' | 'SUBJECTS' | 'REPORTS' | 'SETTINGS';
 
 export const AdminDashboard = () => {
@@ -71,17 +75,26 @@ export const AdminDashboard = () => {
   };
 
   const handleAddSubject = async () => {
-      if(!newSubId || !newSubName) return;
-      const sub: SubjectDef = {
-          id: newSubId.toLowerCase().replace(/\s/g, '_'),
-          translations: { [language]: newSubName, 'en': newSubName, 'it': newSubName, 'es': newSubName, 'fr': newSubName, 'de': newSubName }, // Simple fill for MVP
-          color: newSubColor,
-          icon: newSubIcon,
-          active: true
-      };
-      await dataService.createSubject(sub);
-      setNewSubId(''); setNewSubName('');
-      refresh();
+      if(!newSubId || !newSubName) {
+          alert("Please fill ID and Name");
+          return;
+      }
+      try {
+          const sub: SubjectDef = {
+              id: newSubId.toLowerCase().replace(/\s/g, '_'),
+              translations: { [language]: newSubName, 'en': newSubName, 'it': newSubName, 'es': newSubName, 'fr': newSubName, 'de': newSubName }, 
+              color: newSubColor,
+              icon: newSubIcon,
+              active: true
+          };
+          await dataService.createSubject(sub);
+          setNewSubId(''); setNewSubName('');
+          refresh();
+          alert("Subject saved!");
+      } catch (e: any) {
+          console.error(e);
+          alert("Error creating subject: " + e.message);
+      }
   };
 
   const handleDeleteSubject = async (id: string) => {
@@ -213,16 +226,16 @@ export const AdminDashboard = () => {
                       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-wrap gap-4 items-end">
                           <div className="flex-1 min-w-[150px]">
                               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">ID (e.g. math)</label>
-                              <input type="text" value={newSubId} onChange={e => setNewSubId(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                              <input type="text" value={newSubId} onChange={e => setNewSubId(e.target.value)} className="w-full border p-2 rounded text-sm" placeholder="unique_id" />
                           </div>
                           <div className="flex-1 min-w-[200px]">
                               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('subjectName')}</label>
-                              <input type="text" value={newSubName} onChange={e => setNewSubName(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                              <input type="text" value={newSubName} onChange={e => setNewSubName(e.target.value)} className="w-full border p-2 rounded text-sm" placeholder="Display Name"/>
                           </div>
                           <div className="w-20">
                               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('icon')}</label>
                               <select value={newSubIcon} onChange={e => setNewSubIcon(e.target.value)} className="w-full border p-2 rounded text-sm">
-                                  {['📚','➗','⚛️','🧬','🌍','🎨','⚽','🇬🇧','🇮🇹'].map(i => <option key={i} value={i}>{i}</option>)}
+                                  {SUBJECT_ICONS.map(i => <option key={i} value={i}>{i}</option>)}
                               </select>
                           </div>
                            <div className="w-32">
@@ -233,6 +246,9 @@ export const AdminDashboard = () => {
                                   <option value="bg-green-100 text-green-800">Green</option>
                                   <option value="bg-yellow-100 text-yellow-800">Yellow</option>
                                   <option value="bg-purple-100 text-purple-800">Purple</option>
+                                  <option value="bg-pink-100 text-pink-800">Pink</option>
+                                  <option value="bg-orange-100 text-orange-800">Orange</option>
+                                  <option value="bg-gray-100 text-gray-800">Gray</option>
                               </select>
                           </div>
                           <button onClick={handleAddSubject} className="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 mb-[1px]">
@@ -247,8 +263,9 @@ export const AdminDashboard = () => {
                                   <div className="flex items-center gap-2">
                                       <span className="text-xl">{sub.icon}</span>
                                       <span className="font-bold">{sub.translations[language] || sub.translations['en']}</span>
+                                      <span className="text-[10px] opacity-50 ml-1 font-mono">{sub.id}</span>
                                   </div>
-                                  <button onClick={() => handleDeleteSubject(sub.id)} className="bg-white/50 hover:bg-white text-red-600 p-1 rounded">🗑️</button>
+                                  <button onClick={() => handleDeleteSubject(sub.id)} className="bg-white/50 hover:bg-white text-red-600 p-1 rounded transition-colors">🗑️</button>
                               </div>
                           ))}
                       </div>

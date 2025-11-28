@@ -50,11 +50,17 @@ export const LeaderDashboard = () => {
     alert("Announcement published!");
   };
 
+  const handleDeleteAnnouncement = async (id: string) => {
+      if(window.confirm('Are you sure you want to delete this announcement?')) {
+          await dataService.deleteAnnouncement(id);
+          loadData();
+      }
+  };
+
   const handleAddHoliday = async () => {
       if (!holidayStartDate || !holidayReason) return;
       
       const end = holidayEndDate || holidayStartDate;
-      
       if (end < holidayStartDate) {
           alert("End date cannot be before start date");
           return;
@@ -97,7 +103,7 @@ export const LeaderDashboard = () => {
             />
             <textarea value={content} onChange={e => setContent(e.target.value)} rows={4} className="w-full border p-3 rounded" placeholder="Content..."/>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-purple-50 p-3 rounded">
                 <input 
                     type="checkbox" 
                     id="sendEmail" 
@@ -106,7 +112,7 @@ export const LeaderDashboard = () => {
                     className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                 />
                 <label htmlFor="sendEmail" className="text-sm text-gray-700 font-medium cursor-pointer">
-                    Send Email Notification to All Users
+                    Send Email Notification (Opens Mail App)
                 </label>
             </div>
 
@@ -121,12 +127,19 @@ export const LeaderDashboard = () => {
         <h3 className="text-xl font-bold text-gray-700">History</h3>
         <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
             {announcements.map(a => (
-            <div key={a.id} className="bg-white p-4 rounded shadow-sm border-l-4 border-purple-500">
+            <div key={a.id} className="bg-white p-4 rounded shadow-sm border-l-4 border-purple-500 group relative">
                 <div className="flex justify-between items-baseline mb-1">
                 <h4 className="font-bold text-gray-800">{a.title}</h4>
                 <span className="text-xs text-gray-500">{a.date}</span>
                 </div>
                 <p className="text-sm text-gray-600 line-clamp-2">{a.content}</p>
+                <button 
+                    onClick={() => handleDeleteAnnouncement(a.id)}
+                    className="absolute top-2 right-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-opacity"
+                    title="Delete Announcement"
+                >
+                    🗑️
+                </button>
             </div>
             ))}
         </div>

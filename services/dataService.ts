@@ -13,6 +13,7 @@ export const dataService = {
   createUser: async (user: User): Promise<User | null> => {
     if (!isSupabaseConfigured()) throw new Error("Supabase not connected");
     
+    // Upsert to handle race conditions if user double clicks or if metadata auth happened concurrently
     const { data, error } = await supabase!
       .from('users')
       .upsert([{
@@ -26,13 +27,15 @@ export const dataService = {
           parent_name: user.parentName,
           parent_email: user.parentEmail,
           status: 'PENDING'
-      }], { onConflict: 'id', ignoreDuplicates: false })
+      }], { onConflict: 'id', ignoreDuplicates: true }) // ignoreDuplicates true avoids overwriting existing profiles
       .select()
       .single();
 
     if (error) {
-         if (error.code === '23505') return dataService.getUserById(user.id);
-         throw error;
+         // If error is not duplicate key, throw it
+         if (error.code !== '23505') throw error;
+         // If duplicate, fetch the existing one
+         return dataService.getUserById(user.id);
     }
     return data;
   },
@@ -84,7 +87,6 @@ export const dataService = {
 
   updateUser: async (id: string, updates: Partial<User>) => {
       if (!isSupabaseConfigured()) return;
-      // Map frontend keys to DB keys
       const dbUpdates: any = { ...updates };
       if (updates.parentName) dbUpdates.parent_name = updates.parentName;
       if (updates.parentEmail) dbUpdates.parent_email = updates.parentEmail;
@@ -101,7 +103,6 @@ export const dataService = {
 
   deleteUser: async (id: string) => {
       if (!isSupabaseConfigured()) return;
-      // Also delete bookings to avoid constraint errors (or rely on cascade)
       await supabase!.from('bookings').delete().or(`student_id.eq.${id},teacher_id.eq.${id}`);
       await supabase!.from('users').delete().eq('id', id);
   },
@@ -127,7 +128,8 @@ export const dataService = {
 
   createSubject: async (subject: SubjectDef) => {
       if (!isSupabaseConfigured()) return;
-      await supabase!.from('subjects').upsert([subject]);
+      const { error } = await supabase!.from('subjects').upsert([subject]);
+      if (error) throw error; 
   },
 
   deleteSubject: async (id: string) => {
@@ -153,6 +155,8 @@ export const dataService = {
 
   createBooking: async (student: User, subjectId: string, date: string) => {
     if (!isSupabaseConfigured()) return;
+    
+    // Check constraints before inserting (or use DB constraints, but filtering here gives better error messages)
     const { data: studentBookings } = await supabase!
         .from('bookings')
         .select('*')
@@ -162,6 +166,7 @@ export const dataService = {
     if (studentBookings && studentBookings.length >= 2) throw new Error("MAX_SUBJECTS");
     if (studentBookings?.find(b => b.subject_id === subjectId)) throw new Error("DUPLICATE_SUBJECT");
 
+    // Upsert to be safe against race conditions
     const { error } = await supabase!.from('bookings').insert([{
         student_id: student.id,
         student_name: student.name,
@@ -230,10 +235,20 @@ export const dataService = {
     }]);
 
     if (sendEmail) {
-        // Here you would trigger an Edge Function or call an external API to send emails.
-        // For MVP frontend-only: We can't safely send mass emails to all users from client.
-        console.log("Email notification flag set for:", announcement.title);
+        // Mailto Trick for MVP
+        const { data } = await supabase!.from('users').select('email');
+        const allEmails = data?.map(u => u.email).join(',');
+        if(allEmails) {
+             const subject = encodeURIComponent(`Portofranco: ${announcement.title}`);
+             const body = encodeURIComponent(announcement.content + "\n\n--\nPortofranco Connect");
+             window.open(`mailto:?bcc=${allEmails}&subject=${subject}&body=${body}`);
+        }
     }
+  },
+
+  deleteAnnouncement: async (id: string) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('announcements').delete().eq('id', id);
   },
 
   getHolidays: async (): Promise<Holiday[]> => {
@@ -259,7 +274,6 @@ export const dataService = {
               reason: reason
           });
       }
-      // Bulk insert
       if(holidays.length > 0) {
           await supabase!.from('holidays').insert(holidays);
       }
@@ -309,7 +323,7 @@ export const dataService = {
   getAvailableDates: (allowedDays: number[] = [2, 4]): string[] => {
     const dates: string[] = [];
     const today = new Date();
-    for (let i = 1; i <= 60; i++) { // Extend to 60 days lookahead
+    for (let i = 1; i <= 60; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const day = d.getDay();
