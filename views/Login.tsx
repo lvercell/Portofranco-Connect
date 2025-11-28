@@ -43,6 +43,12 @@ export const Login = () => {
   const [captchaVal2, setCaptchaVal2] = useState(0);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
 
+  // --- FIX: Reset submitting state when view changes ---
+  useEffect(() => {
+      setIsSubmitting(false);
+  }, [loginStep, isRegistering, loginMethod, isRecovering]);
+  // ----------------------------------------------------
+
   useEffect(() => {
     if (dob) {
         const birthDate = new Date(dob);
@@ -140,11 +146,15 @@ export const Login = () => {
       if (loginStep === 'CREDENTIALS') {
         if (loginMethod === 'OTP') {
              await login(email); 
+             // IMPORTANT: setIsSubmitting(false) will be handled by the useEffect on loginStep change
         } else {
              await loginWithPassword(email, password);
+             // On success, component unmounts/redirects, but if we stay:
+             setIsSubmitting(false);
         }
       } else {
         await verifyMfa(otp);
+        // On success, AuthContext triggers user load, eventually unmounting Login
       }
     } catch (err: any) {
       console.error(err);
@@ -232,6 +242,7 @@ export const Login = () => {
 
     try {
       await register(newUser);
+      // Success will trigger loginStep change -> useEffect resets submitting
     } catch (err: any) {
       console.error(err);
       if (err.message && err.message.includes("Error sending magic link")) {
