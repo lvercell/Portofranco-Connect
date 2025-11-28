@@ -19,6 +19,8 @@ export interface User {
   phone: string;
   role: Role;
   age: number;
+  dob?: string;
+  status?: string;
   isAdmin?: boolean;
   isLeader?: boolean;
   parentName?: string;

@@ -1,9 +1,15 @@
+
 import { User, Booking, Announcement } from '../types';
 import { supabase } from './supabaseClient';
 
 // Helper to check if Supabase is connected
 const isSupabaseConfigured = () => {
     return !!supabase;
+};
+
+// Helper for generating fallback IDs for older browsers
+const generateId = () => {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
 };
 
 export const dataService = {
@@ -17,7 +23,18 @@ export const dataService = {
     // The 'id' MUST match the auth.uid() from the registered user in AuthContext.
     const { data, error } = await supabase!
       .from('users')
-      .insert([user])
+      .insert([{
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          phone: user.phone,
+          role: user.role,
+          age: user.age,
+          dob: user.dob,
+          parent_name: user.parentName,
+          parent_email: user.parentEmail,
+          status: 'PENDING'
+      }])
       .select()
       .single();
 
@@ -34,7 +51,14 @@ export const dataService = {
       .single();
       
     if (error) return null;
-    return data;
+    // Map snake_case from DB to camelCase for app
+    return {
+        ...data,
+        parentName: data.parent_name,
+        parentEmail: data.parent_email,
+        isAdmin: data.is_admin,
+        isLeader: data.is_leader
+    };
   },
 
   getUserByEmail: async (email: string): Promise<User | null> => {
@@ -46,18 +70,51 @@ export const dataService = {
       .single();
 
     if (error) return null;
-    return data;
+    return {
+        ...data,
+        parentName: data.parent_name,
+        parentEmail: data.parent_email,
+        isAdmin: data.is_admin,
+        isLeader: data.is_leader
+    };
   },
 
   getAllUsers: async (): Promise<User[]> => {
     if (!isSupabaseConfigured()) return [];
     const { data } = await supabase!.from('users').select('*');
-    return data || [];
+    return (data || []).map((u: any) => ({
+        ...u,
+        parentName: u.parent_name,
+        parentEmail: u.parent_email,
+        isAdmin: u.is_admin,
+        isLeader: u.is_leader
+    }));
   },
 
   toggleLeaderStatus: async (userId: string, currentStatus: boolean) => {
     if (!isSupabaseConfigured()) return;
     await supabase!.from('users').update({ is_leader: !currentStatus }).eq('id', userId);
+  },
+
+  approveUser: async (userId: string) => {
+    if (!isSupabaseConfigured()) return;
+    await supabase!.from('users').update({ status: 'APPROVED' }).eq('id', userId);
+  },
+
+  // --- AUTH UTILS ---
+
+  sendPasswordReset: async (email: string) => {
+    if (!isSupabaseConfigured()) return;
+    const { error } = await supabase!.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin, // Redirects back to the app with #access_token=...
+    });
+    if (error) throw error;
+  },
+
+  updatePassword: async (password: string) => {
+    if (!isSupabaseConfigured()) return;
+    const { error } = await supabase!.auth.updateUser({ password });
+    if (error) throw error;
   },
 
   // --- BOOKINGS ---
@@ -68,7 +125,14 @@ export const dataService = {
         .from('bookings')
         .select('*');
     if (error) console.error(error);
-    return data || [];
+    return (data || []).map((b: any) => ({
+        ...b,
+        studentId: b.student_id,
+        studentName: b.student_name,
+        subjectId: b.subject_id,
+        teacherId: b.teacher_id,
+        teacherName: b.teacher_name
+    }));
   },
 
   createBooking: async (student: User, subjectId: string, date: string) => {
@@ -85,22 +149,10 @@ export const dataService = {
         throw new Error("MAX_SUBJECTS");
     }
 
-    if (studentBookings?.find(b => b.subjectId === subjectId)) {
+    if (studentBookings?.find(b => b.subject_id === subjectId)) {
         throw new Error("DUPLICATE_SUBJECT");
     }
 
-    const newBooking = {
-      student_id: student.id,
-      student_name: student.name,
-      subject_id: subjectId, // maps to subjectId col in DB
-      date: date
-    };
-
-    // Note: ensure DB columns are snake_case: student_id, etc.
-    // I am mapping the object keys to snake_case for Supabase if needed, 
-    // but usually it's easier to keep TS types matching DB or map them.
-    // For this prototype, I will assume the DB columns created in SQL match the keys here 
-    // OR I will map them explicitly.
     const { error } = await supabase!.from('bookings').insert([{
         student_id: student.id,
         student_name: student.name,
@@ -155,7 +207,11 @@ export const dataService = {
         .from('announcements')
         .select('*')
         .order('created_at', { ascending: false });
-    return data || [];
+    
+    return (data || []).map((a: any) => ({
+        ...a,
+        authorName: a.author_name
+    }));
   },
 
   createAnnouncement: async (announcement: Announcement) => {
@@ -164,11 +220,32 @@ export const dataService = {
         title: announcement.title,
         content: announcement.content,
         author_name: announcement.authorName,
-        date: announcement.date
+        created_at: new Date().toISOString()
     }]);
   },
 
+  // --- SYSTEM SETTINGS ---
+
+  getSystemSettings: async (key: string): Promise<string | null> => {
+      if (!isSupabaseConfigured()) return null;
+      const { data } = await supabase!
+        .from('system_settings')
+        .select('value')
+        .eq('key', key)
+        .single();
+      return data?.value || null;
+  },
+
+  setSystemSettings: async (key: string, value: string) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!
+        .from('system_settings')
+        .upsert([{ key, value }]);
+  },
+
   // --- UTILS ---
+
+  generateId,
 
   getAvailableDates: (): string[] => {
     const dates: string[] = [];

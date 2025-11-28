@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from 'react';
 import { User, Role } from '../types';
 import { dataService } from '../services/dataService';
@@ -7,10 +8,13 @@ interface AuthContextType {
   user: User | null;
   loginStep: 'CREDENTIALS' | 'MFA';
   login: (email: string) => Promise<void>;
+  loginWithPassword: (email: string, password: string) => Promise<void>;
   verifyMfa: (code: string) => Promise<void>;
   logout: () => void;
   register: (user: User) => Promise<void>;
   loading: boolean;
+  isPasswordRecovery: boolean; // Flag to show reset password screen
+  setIsPasswordRecovery: (val: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +25,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [loginStep, setLoginStep] = useState<'CREDENTIALS' | 'MFA'>('CREDENTIALS');
   const [loading, setLoading] = useState(true);
   const [pendingRegisterUser, setPendingRegisterUser] = useState<User | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
     // Check active session on load
@@ -32,31 +37,60 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        // Fetch full profile from public.users
-        const profile = await dataService.getUserById(session.user.id);
-        if (profile) {
-            setUser(profile);
-        }
+        await loadProfile(session.user.id);
       }
       setLoading(false);
     };
     
     checkSession();
+
+    // Listen for Auth changes (Magic Links, Password Reset, etc)
+    const { data: authListener } = supabase?.auth.onAuthStateChange(async (event, session) => {
+        console.log("Supabase Auth Event:", event);
+        if (event === 'SIGNED_IN' && session?.user) {
+            await loadProfile(session.user.id);
+        }
+        if (event === 'SIGNED_OUT') {
+            setUser(null);
+            setLoginStep('CREDENTIALS');
+        }
+        if (event === 'PASSWORD_RECOVERY') {
+            setIsPasswordRecovery(true);
+        }
+    }) || { data: { subscription: { unsubscribe: () => {} } } };
+
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
   }, []);
+
+  const loadProfile = async (uid: string) => {
+     const profile = await dataService.getUserById(uid);
+     if (profile) {
+        if (profile.status === 'PENDING') {
+            await supabase?.auth.signOut();
+            throw new Error("ACCOUNT_PENDING");
+        }
+        setUser(profile);
+     }
+  };
 
   const login = async (email: string) => {
     if (!supabase) throw new Error("Supabase not configured");
     
-    // Check if user exists in our public table first (pseudo-check)
-    const existing = await dataService.getUserByEmail(email);
-    if (!existing) throw new Error("User not registered. Please register first.");
-
-    // Send OTP via Email
+    // Send OTP via Email (Magic Link)
     const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) throw error;
 
     setEmailForMfa(email);
     setLoginStep('MFA');
+  };
+
+  const loginWithPassword = async (email: string, password: string) => {
+      if (!supabase) throw new Error("Supabase not configured");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // onAuthStateChange handles the profile loading
   };
 
   const verifyMfa = async (code: string) => {
@@ -76,11 +110,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             await dataService.createUser(newUserProfile);
             setUser(newUserProfile);
             setPendingRegisterUser(null);
-        } else {
-            // Normal login
-            const profile = await dataService.getUserById(data.session.user.id);
-            setUser(profile);
-        }
+        } 
         setLoginStep('CREDENTIALS');
     }
   };
@@ -104,7 +134,18 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loginStep, login, verifyMfa, logout, register, loading }}>
+    <AuthContext.Provider value={{ 
+        user, 
+        loginStep, 
+        login, 
+        loginWithPassword,
+        verifyMfa, 
+        logout, 
+        register, 
+        loading,
+        isPasswordRecovery,
+        setIsPasswordRecovery
+    }}>
       {children}
     </AuthContext.Provider>
   );
