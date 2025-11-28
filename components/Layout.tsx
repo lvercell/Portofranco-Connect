@@ -11,10 +11,10 @@ export const Layout = ({ children }: PropsWithChildren) => {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} min-h-screen font-sans selection:bg-indigo-100 selection:text-indigo-800`}>
-        {/* Development Banner (Strictly Fixed) */}
-        <div className="fixed bottom-4 right-4 z-[99999] pointer-events-none print:hidden">
-            <div className="bg-yellow-400/90 backdrop-blur text-yellow-900 text-[10px] font-bold font-mono px-3 py-1.5 rounded-full shadow-lg border border-yellow-500/30 uppercase tracking-wider animate-pulse flex items-center gap-1.5 pointer-events-auto select-none hover:scale-105 transition-transform cursor-default">
-                <span>🛠️</span> {t('devMode')}
+        {/* Development Banner (Fixed relative to viewport) */}
+        <div className="fixed bottom-3 right-3 z-[99999] print:hidden">
+            <div className="bg-yellow-400 text-yellow-900 text-[10px] font-bold font-mono px-3 py-1.5 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)] border border-yellow-500 uppercase tracking-wider animate-pulse flex items-center gap-1.5 hover:scale-105 transition-transform cursor-default select-none">
+                <span>🚧</span> {t('devMode')}
             </div>
         </div>
 
@@ -82,7 +82,7 @@ export const Layout = ({ children }: PropsWithChildren) => {
             </div>
             </nav>
             
-            <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 print:p-0">
+            <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 print:p-0">
             {children}
             </main>
         </div>

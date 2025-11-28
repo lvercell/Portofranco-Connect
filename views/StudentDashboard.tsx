@@ -103,14 +103,14 @@ export const StudentDashboard = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
         
         {/* Left Column: Booking Logic */}
-        <div className="lg:col-span-2 space-y-4 flex flex-col h-full">
+        <div className="lg:col-span-2 space-y-2 flex flex-col h-full">
           
           {/* 1. Date Selection */}
-          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-             <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-3 flex items-center">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+             <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-2 flex items-center">
                 <span className="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 p-1.5 rounded-lg mr-2 text-sm">🗓️</span>
                 {t('selectDate')}
              </h2>
@@ -153,7 +153,7 @@ export const StudentDashboard = () => {
           </div>
 
           {/* 2. Subject Selection */}
-          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col flex-1 min-h-[500px]">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col flex-1 min-h-[500px]">
             <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center shrink-0">
                 <span className="bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 p-1.5 rounded-lg mr-2 text-sm">📚</span>
                 {t('selectSubjectTitle')}

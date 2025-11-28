@@ -27,7 +27,7 @@ const MainContent = () => {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Universal Announcement Banner */}
       {announcements.length > 0 && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded shadow-sm">
@@ -48,14 +48,14 @@ const MainContent = () => {
       )}
 
       {/* Welcome Header */}
-      <div className="bg-indigo-700/90 backdrop-blur-sm rounded-xl p-6 text-white shadow-md flex justify-between items-center">
+      <div className="bg-indigo-700/90 backdrop-blur-sm rounded-xl p-5 text-white shadow-md flex justify-between items-center">
         <div>
-            <h1 className="text-2xl font-bold">{t('welcome')}, {user.name}!</h1>
-            <p className="opacity-80 text-sm mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold">{t('welcome')}, {user.name}!</h1>
+            <p className="opacity-80 text-sm mt-0.5">
             {t('role')}: <span className="font-semibold">{t(user.role.toLowerCase())}</span> {user.isAdmin && '(Admin)'} {user.isLeader && '(Leader)'}
             </p>
         </div>
-        <div className="hidden sm:block text-4xl opacity-20">
+        <div className="hidden sm:block text-3xl opacity-20">
             👋
         </div>
       </div>
