@@ -1,4 +1,5 @@
 
+
 import { Language, SubjectDef } from './types';
 
 // Fallback Subjects in case DB is empty
@@ -121,6 +122,11 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterEmailRecovery: 'Inserisci la tua email per ricevere il link.',
     copyEmails: 'Copia Lista Email',
     emailsCopied: 'Email copiate! Incolla in CCO.',
+    // Security
+    accessCode: 'Codice Accesso Scuola',
+    securityQuestion: 'Domanda di Sicurezza',
+    errAccessCode: 'Codice Accesso Scuola non valido.',
+    errCaptcha: 'Risposta di sicurezza errata.',
     // Colors
     col_blue: 'Blu',
     col_red: 'Rosso',
@@ -238,6 +244,11 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterEmailRecovery: 'Enter your email to receive a reset link.',
     copyEmails: 'Copy Email List',
     emailsCopied: 'Emails copied! Paste into BCC.',
+    // Security
+    accessCode: 'School Access Code',
+    securityQuestion: 'Security Question',
+    errAccessCode: 'Invalid School Access Code.',
+    errCaptcha: 'Incorrect security answer.',
     // Colors
     col_blue: 'Blue',
     col_red: 'Red',
@@ -355,6 +366,11 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterEmailRecovery: 'Ingresa tu email para recibir el enlace.',
     copyEmails: 'Copiar Lista Email',
     emailsCopied: '¡Copiado! Pega en CCO.',
+    // Security
+    accessCode: 'Código de Acceso Escolar',
+    securityQuestion: 'Pregunta de Seguridad',
+    errAccessCode: 'Código de acceso inválido.',
+    errCaptcha: 'Respuesta de seguridad incorrecta.',
     // Colors
     col_blue: 'Azul',
     col_red: 'Rojo',
@@ -472,6 +488,11 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterEmailRecovery: 'Entrez votre email pour recevoir le lien.',
     copyEmails: 'Copier Emails',
     emailsCopied: 'Copié ! Coller en Cci.',
+    // Security
+    accessCode: 'Code d\'accès scolaire',
+    securityQuestion: 'Question de sécurité',
+    errAccessCode: 'Code d\'accès scolaire invalide.',
+    errCaptcha: 'Réponse de sécurité incorrecte.',
     // Colors
     col_blue: 'Bleu',
     col_red: 'Rouge',
@@ -589,6 +610,11 @@ export const DICTIONARY: Record<Language, Record<string, string>> = {
     enterEmailRecovery: 'Geben Sie Ihre E-Mail ein.',
     copyEmails: 'E-Mails kopieren',
     emailsCopied: 'Kopiert! In BCC einfügen.',
+    // Security
+    accessCode: 'Schulzugangscode',
+    securityQuestion: 'Sicherheitsfrage',
+    errAccessCode: 'Ungültiger Schulzugangscode.',
+    errCaptcha: 'Falsche Sicherheitsantwort.',
     // Colors
     col_blue: 'Blau',
     col_red: 'Rot',

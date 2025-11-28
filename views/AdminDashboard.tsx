@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { dataService } from '../services/dataService';
@@ -43,6 +44,7 @@ export const AdminDashboard = () => {
   const [showAbsences, setShowAbsences] = useState(false);
   
   const [customBg, setCustomBg] = useState('');
+  const [currentAccessCode, setCurrentAccessCode] = useState('');
 
   const refresh = async () => {
     const allUsers = await dataService.getAllUsers();
@@ -51,6 +53,8 @@ export const AdminDashboard = () => {
     setSubjects(allSubs);
     const allBookings = await dataService.getBookings();
     setBookings(allBookings);
+    const code = await dataService.getAccessCode();
+    setCurrentAccessCode(code);
   };
 
   useEffect(() => {
@@ -114,6 +118,11 @@ export const AdminDashboard = () => {
     e.preventDefault();
     if(customBg) setBackgroundImage(customBg);
   }
+  
+  const handleUpdateAccessCode = async () => {
+      await dataService.saveAccessCode(currentAccessCode);
+      alert("School Access Code Updated!");
+  };
 
   const pendingUsers = users.filter(u => u.status === 'PENDING');
   
@@ -375,23 +384,41 @@ export const AdminDashboard = () => {
               {/* --- SETTINGS TAB --- */}
               {activeTab === 'SETTINGS' && (
                   <div className="space-y-6">
-                      <h3 className="font-bold text-gray-700 dark:text-gray-200">Wallpaper</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {WALLPAPER_PRESETS.map(p => (
-                            <button 
-                            key={p.name}
-                            onClick={() => setBackgroundImage(p.url)}
-                            className={`h-24 rounded-lg bg-cover bg-center border-4 transition-all hover:opacity-100 ${backgroundImage === p.url ? 'border-indigo-500 opacity-100' : 'border-transparent opacity-60'}`}
-                            style={{ backgroundImage: `url(${p.url})` }}
-                            >
-                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded">{p.name}</span>
-                            </button>
-                        ))}
+                      <div className="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <h3 className="font-bold text-gray-700 dark:text-gray-200 mb-4">🎨 Wallpaper</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            {WALLPAPER_PRESETS.map(p => (
+                                <button 
+                                key={p.name}
+                                onClick={() => setBackgroundImage(p.url)}
+                                className={`h-24 rounded-lg bg-cover bg-center border-4 transition-all hover:opacity-100 ${backgroundImage === p.url ? 'border-indigo-500 opacity-100' : 'border-transparent opacity-60'}`}
+                                style={{ backgroundImage: `url(${p.url})` }}
+                                >
+                                <span className="bg-black/50 text-white text-xs px-2 py-1 rounded">{p.name}</span>
+                                </button>
+                            ))}
+                          </div>
+                          <form onSubmit={handleCustomBg} className="flex gap-2 max-w-md">
+                            <input type="text" placeholder="Custom Image URL" value={customBg} onChange={e => setCustomBg(e.target.value)} className="flex-1 border dark:border-gray-500 dark:bg-gray-700 dark:text-white p-2 rounded text-sm"/>
+                            <button className="bg-gray-800 dark:bg-gray-600 text-white px-3 py-1 rounded text-sm">Set</button>
+                          </form>
                       </div>
-                      <form onSubmit={handleCustomBg} className="flex gap-2 max-w-md">
-                        <input type="text" placeholder="Custom Image URL" value={customBg} onChange={e => setCustomBg(e.target.value)} className="flex-1 border dark:border-gray-500 dark:bg-gray-700 dark:text-white p-2 rounded text-sm"/>
-                        <button className="bg-gray-800 dark:bg-gray-600 text-white px-3 py-1 rounded text-sm">Set</button>
-                      </form>
+
+                      <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-lg border border-red-200 dark:border-red-800">
+                          <h3 className="font-bold text-red-700 dark:text-red-300 mb-2">🔐 Security</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Restricts registration to users who know this code.</p>
+                          <div className="flex gap-2 max-w-md">
+                              <input 
+                                type="text" 
+                                value={currentAccessCode} 
+                                onChange={e => setCurrentAccessCode(e.target.value)} 
+                                className="flex-1 border dark:border-gray-500 dark:bg-gray-700 dark:text-white p-2 rounded font-mono font-bold"
+                              />
+                              <button onClick={handleUpdateAccessCode} className="bg-red-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-red-700">
+                                  Update Code
+                              </button>
+                          </div>
+                      </div>
                   </div>
               )}
 

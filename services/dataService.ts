@@ -1,4 +1,5 @@
 
+
 import { User, Booking, Announcement, Holiday, SubjectDef, AttendanceStatus } from '../types';
 import { supabase } from './supabaseClient';
 import { SUBJECTS_DATA as FALLBACK_SUBJECTS } from '../constants';
@@ -311,6 +312,34 @@ export const dataService = {
       await supabase!.from('system_settings').upsert({
           key: 'class_days',
           value: JSON.stringify(days)
+      });
+  },
+
+  // --- SECURITY (ACCESS CODE) ---
+  verifyAccessCode: async (inputCode: string): Promise<boolean> => {
+      if (!isSupabaseConfigured()) return true; // Fail open in local mode if DB issue
+      const { data } = await supabase!
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'access_code')
+          .single();
+      
+      // If no code set in DB, allow all (or default to PORTO2025 if strictly needed)
+      if (!data) return inputCode === 'PORTO2025'; 
+      return data.value === inputCode;
+  },
+
+  getAccessCode: async (): Promise<string> => {
+      if (!isSupabaseConfigured()) return '';
+      const { data } = await supabase!.from('system_settings').select('value').eq('key', 'access_code').single();
+      return data?.value || 'PORTO2025';
+  },
+
+  saveAccessCode: async (newCode: string) => {
+      if (!isSupabaseConfigured()) return;
+      await supabase!.from('system_settings').upsert({
+          key: 'access_code',
+          value: newCode
       });
   },
 

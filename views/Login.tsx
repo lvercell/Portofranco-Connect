@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -34,6 +36,12 @@ export const Login = () => {
   const [parentName, setParentName] = useState('');
   const [parentEmail, setParentEmail] = useState('');
   const [role, setRole] = useState<Role>(Role.STUDENT);
+  
+  // Security State
+  const [accessCode, setAccessCode] = useState('');
+  const [captchaVal1, setCaptchaVal1] = useState(0);
+  const [captchaVal2, setCaptchaVal2] = useState(0);
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
 
   useEffect(() => {
     if (dob) {
@@ -63,6 +71,17 @@ export const Login = () => {
           setTimeLeft(60 + (resendCount * 30));
       }
   }, [loginStep, resendCount]);
+
+  useEffect(() => {
+      // Regenerate Captcha when switching to register
+      if (isRegistering) generateCaptcha();
+  }, [isRegistering]);
+
+  const generateCaptcha = () => {
+      setCaptchaVal1(Math.floor(Math.random() * 10) + 1);
+      setCaptchaVal2(Math.floor(Math.random() * 10) + 1);
+      setCaptchaAnswer('');
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center dark:text-white">{t('loading')}</div>;
 
@@ -169,6 +188,29 @@ export const Login = () => {
     setError('');
     setIsSubmitting(true);
     
+    // Security Check 1: Captcha
+    if (parseInt(captchaAnswer) !== captchaVal1 + captchaVal2) {
+        setError(t('errCaptcha'));
+        generateCaptcha();
+        setIsSubmitting(false);
+        return;
+    }
+
+    // Security Check 2: Access Code
+    try {
+        const isValidCode = await dataService.verifyAccessCode(accessCode.trim());
+        if (!isValidCode) {
+            setError(t('errAccessCode'));
+            setIsSubmitting(false);
+            return;
+        }
+    } catch (e) {
+        console.error(e);
+        setError("Security check failed");
+        setIsSubmitting(false);
+        return;
+    }
+
     if (age < 16 && (!parentName || !parentEmail)) {
       setError(t('errParentRequired'));
       setIsSubmitting(false);
@@ -374,6 +416,36 @@ export const Login = () => {
                   </div>
                 </div>
               )}
+
+              {/* SECURITY SECTION */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                      <div>
+                          <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">🔐 {t('accessCode')}</label>
+                          <input 
+                            type="text" 
+                            value={accessCode} 
+                            onChange={e => setAccessCode(e.target.value)} 
+                            className="w-full border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white border p-2 rounded-lg text-sm" 
+                            placeholder="CODE"
+                            required 
+                          />
+                      </div>
+                      <div>
+                          <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">🔢 {t('securityQuestion')}</label>
+                          <div className="flex items-center gap-2">
+                              <span className="text-gray-500 dark:text-gray-400 font-mono font-bold bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{captchaVal1} + {captchaVal2} = ?</span>
+                              <input 
+                                type="number" 
+                                value={captchaAnswer} 
+                                onChange={e => setCaptchaAnswer(e.target.value)} 
+                                className="w-full border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white border p-2 rounded-lg text-sm" 
+                                required 
+                              />
+                          </div>
+                      </div>
+                  </div>
+              </div>
             </>
           )}
 
@@ -389,6 +461,8 @@ export const Login = () => {
                 setError('');
                 setEmail('');
                 setLoginMethod('OTP'); 
+                setAccessCode('');
+                setCaptchaAnswer('');
             }}
             className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
           >
