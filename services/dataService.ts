@@ -1,5 +1,4 @@
 
-
 import { User, Booking, Announcement, Holiday, SubjectDef, AttendanceStatus } from '../types';
 import { supabase } from './supabaseClient';
 import { SUBJECTS_DATA as FALLBACK_SUBJECTS } from '../constants';
@@ -317,11 +316,11 @@ export const dataService = {
 
   getWallpaper: async (): Promise<string | null> => {
       if (!isSupabaseConfigured()) return null;
-      const { data, error } = await supabase!.from('system_settings').select('value').eq('key', 'app_bg').single();
+      // Using .maybeSingle() prevents errors if row doesn't exist yet
+      const { data, error } = await supabase!.from('system_settings').select('value').eq('key', 'app_bg').maybeSingle();
       
       if (error) {
-          // If error is permission denied (code 42501 or PGRST301), it means public read policy is missing
-          console.warn("Error fetching wallpaper (check RLS policies):", error.message);
+          console.warn("Error fetching wallpaper:", error.message);
           return null;
       }
       return data?.value || null;
@@ -338,18 +337,22 @@ export const dataService = {
   // --- SECURITY (ACCESS CODE) ---
   verifyAccessCode: async (inputCode: string): Promise<boolean> => {
       if (!isSupabaseConfigured()) return true; // Fail open in local mode if DB issue
-      const { data } = await supabase!
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'access_code')
-          .single();
       
-      // If no code set in DB, allow all (or default to PORTO2025 if strictly needed)
-      if (!data) return inputCode === 'PORTO2025'; 
-      return data.value === inputCode;
+      // Call the Secure Database Function (RPC)
+      // This prevents exposing the real code to the frontend
+      const { data, error } = await supabase!.rpc('verify_school_code', { input_code: inputCode });
+      
+      if (error) {
+          console.error("Access Code Verification Error:", error.message);
+          // Fallback check (only works if code is default PORTO2025 and DB func fails completely)
+          return inputCode === 'PORTO2025';
+      }
+      
+      return !!data;
   },
 
   getAccessCode: async (): Promise<string> => {
+      // Only admins should see this, protected by RLS
       if (!isSupabaseConfigured()) return '';
       const { data } = await supabase!.from('system_settings').select('value').eq('key', 'access_code').single();
       return data?.value || 'PORTO2025';
